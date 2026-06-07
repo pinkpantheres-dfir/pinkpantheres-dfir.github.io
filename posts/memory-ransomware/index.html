@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Android App Forensic — Malicious Ad SDK · PinkPantheres</title>
+  <meta name="description" content="Recovered network indicators, dynamic code loading paths, and IOCs from a compromised Android app bundling a rogue advertising SDK." />
+  <link rel="icon" href="../../assets/cat.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --pink: #ff2d78;
+      --pink-dim: #ff2d7844;
+      --pink-glow: #ff2d7822;
+      --cyan: #00f5d4;
+      --text: #e8e8f0;
+      --muted: #7a7a9a;
+      --tag-bg: #1e1e2e;
+      --code-bg: #13131e;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .nav-logo {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1.5px solid var(--pink);
+      overflow: hidden;
+    }
+
+    .nav-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .nav-name { font-size: 16px; font-weight: 800; color: var(--pink); }
+
+    .nav-back {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-back:hover { color: var(--pink); }
+
+    /* ── POST HEADER ── */
+    .post-header {
+      padding: 56px 0 40px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .post-type {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .type-forensics { background: #ff2d7820; color: var(--pink); border: 1px solid #ff2d7840; }
+    .type-ctf       { background: #00f5d420; color: var(--cyan); border: 1px solid #00f5d440; }
+    .type-osint     { background: #a78bfa20; color: #a78bfa;    border: 1px solid #a78bfa40; }
+    .type-malware   { background: #fb923c20; color: #fb923c;    border: 1px solid #fb923c40; }
+
+    .post-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .post-readtime {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .post-title {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .post-desc {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 24px;
+    }
+
+    .post-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 4px 10px;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    /* ── ARTICLE BODY ── */
+    .post-body {
+      animation: fadeUp 0.5s 0.1s ease both;
+      padding-bottom: 80px;
+    }
+
+    .post-body h2 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin: 40px 0 16px;
+      color: var(--text);
+      position: relative;
+      padding-left: 16px;
+    }
+
+    .post-body h2::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 4px; bottom: 4px;
+      width: 3px;
+      background: var(--pink);
+      border-radius: 2px;
+    }
+
+    .post-body h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 28px 0 12px;
+      color: var(--cyan);
+    }
+
+    .post-body p {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      line-height: 1.9;
+      color: #c8c8d8;
+      margin-bottom: 16px;
+    }
+
+    .post-body a {
+      color: var(--pink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--pink-dim);
+      transition: border-color 0.2s;
+    }
+
+    .post-body a:hover { border-color: var(--pink); }
+
+    .post-body ul, .post-body ol {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: #c8c8d8;
+      line-height: 2;
+      padding-left: 20px;
+      margin-bottom: 16px;
+    }
+
+    .post-body li::marker { color: var(--pink); }
+
+    /* CODE BLOCKS */
+    .post-body pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--pink);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    .post-body pre code {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: #c8c8d8;
+      line-height: 1.7;
+    }
+
+    .post-body code {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--cyan);
+    }
+
+    .post-body pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #c8c8d8;
+    }
+
+    /* CALLOUT / TIP BOXES */
+    .callout {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+
+    .callout.warn { border-left-color: #fb923c; }
+    .callout.flag { border-left-color: var(--pink); }
+
+    .callout-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+
+    .callout.warn .callout-label { color: #fb923c; }
+    .callout.flag .callout-label { color: var(--pink); }
+
+    .callout p {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.7;
+    }
+
+    /* IMAGE */
+    .post-body img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    .img-caption {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: -12px;
+      margin-bottom: 20px;
+    }
+
+    /* ── POST FOOTER ── */
+    .post-nav {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .post-nav a {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .post-nav a:hover { color: var(--pink); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 0;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer p {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="nav-brand" href="../../index.html">
+        <div class="nav-logo"><img src="../../assets/cat.png" alt="logo"></div>
+        <span class="nav-name">PinkPantheres</span>
+      </a>
+      <a href="../../index.html" class="nav-back">← All Posts</a>
+    </nav>
+
+    <header class="post-header">
+      <div class="post-meta">
+        <span class="post-type type-forensics">forensics</span>
+        <span class="post-date">2025-05-12</span>
+        <span class="post-readtime">8 min read</span>
+      </div>
+      <h1 class="post-title">Android App Forensic —<br>Malicious Ad SDK</h1>
+      <p class="post-desc">Recovered network indicators, dynamic code loading paths, and IOCs from a compromised Android app bundling a rogue advertising SDK.</p>
+      <div class="post-tags">
+        <span class="tag">#android</span>
+        <span class="tag">#malware</span>
+        <span class="tag">#APK</span>
+        <span class="tag">#network-forensics</span>
+      </div>
+    </header>
+
+    <hr class="divider">
+
+    <article class="post-body">
+
+      <h2>Overview</h2>
+      <p>A user submitted an APK from a third-party app store claiming excessive battery drain and unexpected data usage. Static and dynamic analysis revealed the app bundled a rogue ad SDK performing covert C2 communication and dynamic DEX loading.</p>
+
+      <div class="callout flag">
+        <div class="callout-label">// IOC Summary</div>
+        <p>C2 domain: <code>metrics-cdn[.]net</code> | IP: <code>185.220.101.47</code> | SHA256 of malicious dex: <code>a3f8…c912</code></p>
+      </div>
+
+      <h2>Static Analysis</h2>
+
+      <h3>Unpacking the APK</h3>
+      <p>APKs are ZIP archives. Start by extracting and running <code>apktool</code> for resource decoding, then <code>jadx</code> for decompiled Java source.</p>
+
+      <pre><code>apktool d suspicious.apk -o suspicious_unpacked
+jadx -d suspicious_jadx suspicious.apk</code></pre>
+
+      <p>Immediately suspicious: a <code>classes2.dex</code> packed inside <code>assets/data/</code> — this is a classic sign of dynamic class loading used to evade static scanners.</p>
+
+      <h3>Manifest Permissions</h3>
+      <p>The <code>AndroidManifest.xml</code> requested an unusual permission set for what was marketed as a simple utility app:</p>
+
+      <pre><code>READ_CONTACTS
+READ_CALL_LOG
+ACCESS_FINE_LOCATION
+RECEIVE_BOOT_COMPLETED
+FOREGROUND_SERVICE</code></pre>
+
+      <div class="callout warn">
+        <div class="callout-label">// Warning</div>
+        <p><code>RECEIVE_BOOT_COMPLETED</code> + a foreground service registration means this SDK persists across reboots. Classic spyware pattern.</p>
+      </div>
+
+      <h2>Dynamic Analysis</h2>
+
+      <h3>Network Traffic</h3>
+      <p>Running the app in an emulator with mitmproxy intercepting traffic, the SDK immediately beaconed out on first launch — before any user interaction.</p>
+
+      <pre><code>POST /api/v2/init HTTP/1.1
+Host: metrics-cdn.net
+Content-Type: application/json
+
+{
+  "did": "c3a8...f912",
+  "pkg": "com.flashlight.ultra",
+  "sdkv": "4.2.1",
+  "loc": "10.1234,76.5678"
+}</code></pre>
+
+      <p>The <code>did</code> field is a device fingerprint, and <code>loc</code> was being silently exfiltrated before any permission dialog was shown.</p>
+
+      <h2>Conclusion</h2>
+      <p>The rogue SDK was identified as a variant of the <strong>HiddenAds</strong> family, modified to add location exfiltration. The app was reported to the play store security team and the C2 infrastructure was flagged to the hosting provider.</p>
+
+      <!-- Add your own sections, images, code blocks below -->
+
+    </article>
+
+    <div class="post-nav">
+      <a href="../../index.html">← Back to all posts</a>
+      <a href="../../index.html">See more →</a>
+    </div>
+
+    <footer>
+      <p>© <span id="year"></span> Hridhya P — PinkPantheres</p>
+      <p>DFIR · OSINT · CTF</p>
+    </footer>
+  </div>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

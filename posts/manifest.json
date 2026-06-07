@@ -1,0 +1,29 @@
+[
+  {
+    "slug": "android-malware-sdk",
+    "title": "Android App Forensic — Malicious Ad SDK",
+    "excerpt": "Recovered network indicators, dynamic code loading paths, and IOCs from a compromised Android app bundling a rogue advertising SDK.",
+    "type": "forensics",
+    "date": "2025-05-12",
+    "readTime": "8 min read",
+    "tags": ["android", "malware", "APK", "network-forensics"]
+  },
+  {
+    "slug": "phishing-attribution",
+    "title": "Phishing Campaign Attribution via OSINT",
+    "excerpt": "OSINT-led threat cluster analysis leading to domain takedown. Tracing infrastructure pivot points across 12 lookalike domains.",
+    "type": "osint",
+    "date": "2025-04-03",
+    "readTime": "6 min read",
+    "tags": ["osint", "phishing", "threat-intel", "domain-analysis"]
+  },
+  {
+    "slug": "memory-ransomware",
+    "title": "Memory Analysis — Windows Ransomware C2 Extraction",
+    "excerpt": "Using Volatility3 to extract C2 infrastructure and runtime routines from a live memory dump of an infected Windows host.",
+    "type": "forensics",
+    "date": "2025-02-19",
+    "readTime": "10 min read",
+    "tags": ["volatility", "windows", "ransomware", "memory-forensics"]
+  }
+]
