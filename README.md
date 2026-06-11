@@ -115,10 +115,10 @@ Then in your post HTML:
 
 ## Deploying to GitHub Pages
 
-1. Create a new repo: `github.com/pinkpantheres/pinkpantheres.github.io`
+1. Create a new repo: `github.com/pinkpantheres/pinkpantheres-dfir.github.io`
 2. Push everything in this folder to the `main` branch
 3. Go to repo Settings → Pages → Source: `main` / `/ (root)`
-4. Your site is live at `https://pinkpantheres.github.io`
+4. Your site is live at `https://pinkpantheres-dfir.github.io/`
 
 > **Important:** GitHub Pages serves static files. The manifest.json approach works perfectly — no server needed.
 
