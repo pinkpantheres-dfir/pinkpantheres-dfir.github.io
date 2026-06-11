@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "careless-drug-dealer",
+    "title": "Careless Drug Dealer",
+    "excerpt": "",
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#exFAT","#file-carving","#autopsy"]
+  },
+  {
+    "slug": "edr-bitstream-analysis",
+    "title": "EDR Bitstream Analysis",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#automotive-DFIR","#edr","#hex-analysis"]
+  },
+  {
+    "slug": "h-264-bitstream-analysis-when-the-header-holds-the-truth",
+    "title": "H.264 Bitstream Analysis When the Header Holds the Truth",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#h264", "#video-recovery"]
+  },
+  {
+    "slug": "maze-of-traffic",
+    "title": "Maze of Traffic",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["network-DFIR", "traffic-analysis"]
+  },
+  {
+    "slug": "mem-oops-following-a-rootkit-through-memory",
+    "title": "Mem, Oops Following a Rootkit Through Memory",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#memory-forensics", "#rootkit", "#windows"]
+  },
+  {
+    "slug": "oops-your-files-have-been-encrypted",
+    "title": "Oops, Your Files Have Been Encrypted",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#ransomware", "#incident-response"]
+  },
+  {
+    "slug": "operation-red-penguin-from-rce-to-lateral-movement",
+    "title": "Operation Red Penguin From RCE to Lateral Movement",
+    "excerpt": null,
+    "type": "threat-analysis",
+    "date": " ",
+    "readTime": null,
+    "tags": [ "#windows", "#adversary-techniques"]
+  },
+  {
+    "slug": "reconnaissance-before-the-crime",
+    "title": "Reconnaissance Before the Crime",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["threat-intel","#osint"]
+  },
+  {
+    "slug": "tracing-a-container-based-crypto-mining-attack",
+    "title": "Tracing a Container-Based Crypto Mining Attack",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#containers", "#crypto-mining", "#cloud-security", "#network-analysis"]
+  },
+  {
+    "slug": "windows-lateral-movement",
+    "title": "Windows Lateral Movement",
+    "excerpt": null,
+    "type": "DFIR",
+    "date": " ",
+    "readTime": null,
+    "tags": ["#windows", "#adversary-techniques"]
+  }
+]
