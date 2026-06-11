@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DFC 2024 – Windows Lateral Movement | PinkPantheres</title>
+<link rel="icon" href="../../assets/cat.png" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;
+  --surface:#111118;
+  --surface2:#16161f;
+  --border:#2a2a3a;
+  --pink:#ff2d78;
+  --cyan:#00f5d4;
+  --amber:#f5a623;
+  --green:#4ade80;
+  --purple:#a78bfa;
+  --text:#e8e8f0;
+  --muted:#8b8ba7;
+  --dim:#5a5a7a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Syne',sans-serif;
+  max-width:860px;
+  margin:auto;
+  padding:48px 32px 100px;
+  line-height:1.8;
+}
+
+/* top bar */
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:56px;padding-bottom:20px;
+  border-bottom:1px solid var(--border);
+}
+.topbar-brand{
+  font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);
+}
+.topbar-sep{color:var(--border);font-size:18px;font-weight:300}
+.topbar-series{
+  font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--pink);
+}
+.topbar-back{
+  margin-left:auto;font-family:'Space Mono',monospace;font-size:10px;
+  color:var(--dim);text-decoration:none;letter-spacing:0.08em;
+  transition:color 0.2s;
+}
+.topbar-back:hover{color:var(--pink)}
+
+/* hero */
+.hero-eyebrow{
+  font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:20px;
+}
+h1{
+  font-size:2.75rem;font-weight:800;line-height:1.12;
+  margin-bottom:20px;letter-spacing:-0.02em;
+}
+.hero-deck{
+  font-family:'Space Mono',monospace;font-size:0.88rem;
+  color:var(--muted);line-height:1.75;max-width:680px;margin-bottom:32px;
+}
+.meta-strip{
+  display:flex;gap:0;flex-wrap:wrap;margin-bottom:32px;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:14px 0;
+}
+.meta-cell{
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);
+  padding-right:28px;margin-right:28px;border-right:1px solid var(--border);line-height:1.6;
+}
+.meta-cell:last-child{border-right:none;margin-right:0;padding-right:0}
+.meta-cell strong{display:block;color:var(--muted);font-weight:700;margin-bottom:2px}
+
+/* tags */
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:52px}
+.tag{
+  font-family:'Space Mono',monospace;font-size:10px;
+  padding:3px 9px;border:1px solid var(--border);
+  color:var(--dim);letter-spacing:0.05em;
+}
+
+/* headings */
+h2{
+  font-size:1.45rem;font-weight:800;
+  border-left:4px solid var(--pink);padding-left:14px;
+  margin-top:60px;margin-bottom:22px;letter-spacing:-0.01em;
+}
+h3{
+  font-family:'Space Mono',monospace;font-size:0.78rem;font-weight:700;
+  color:var(--cyan);text-transform:uppercase;letter-spacing:0.14em;
+  margin-top:36px;margin-bottom:14px;
+}
+
+/* body */
+p{
+  font-family:'Space Mono',monospace;font-size:0.84rem;
+  color:#c4c4d8;margin-bottom:18px;line-height:1.9;
+}
+ul,ol{
+  font-family:'Space Mono',monospace;font-size:0.84rem;
+  color:#c4c4d8;padding-left:22px;margin-bottom:18px;
+}
+li{margin-bottom:10px;line-height:1.75}
+strong{color:var(--text)}
+
+/* lead */
+.lead{
+  font-size:0.96rem;color:#d8d8ec;
+  border-left:2px solid var(--border);padding-left:18px;
+  margin-bottom:32px;line-height:1.9;
+}
+
+/* callouts */
+.callout{
+  background:var(--surface);border-left:4px solid var(--cyan);
+  padding:18px 22px;margin:32px 0;border-radius:0 6px 6px 0;
+}
+.callout.warn{border-left-color:var(--amber)}
+.callout.note{border-left-color:var(--pink)}
+.callout.think{border-left-color:var(--purple);background:#100d18}
+.callout.answer{border-left-color:var(--green);background:#0a150f}
+.callout-label{
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--cyan);margin-bottom:10px;
+}
+.callout.warn .callout-label{color:var(--amber)}
+.callout.note .callout-label{color:var(--pink)}
+.callout.think .callout-label{color:var(--purple)}
+.callout.answer .callout-label{color:var(--green)}
+.callout p{margin:0;font-size:0.82rem;color:var(--muted)}
+
+/* code */
+pre{
+  background:#0c0c16;border-left:4px solid var(--pink);
+  padding:18px 20px;overflow-x:auto;margin:22px 0;
+  border-radius:0 4px 4px 0;
+}
+code{
+  font-family:'Space Mono',monospace;font-size:0.77rem;
+  color:#dcdcff;line-height:1.75;
+}
+p code,li code{
+  background:#1a1a28;padding:2px 7px;border-radius:3px;
+  font-size:0.79rem;color:var(--cyan);
+}
+
+/* timeline */
+.timeline{margin:36px 0;position:relative}
+.timeline::before{
+  content:'';position:absolute;left:132px;top:0;bottom:0;width:1px;
+  background:linear-gradient(to bottom,transparent,var(--border) 40px,var(--border) calc(100% - 40px),transparent);
+}
+.tl-entry{display:grid;grid-template-columns:132px 1fr;gap:0 30px;margin-bottom:2px}
+.tl-time{
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);
+  text-align:right;padding-top:15px;line-height:1.5;
+}
+.tl-body{
+  padding:13px 0 13px 0;border-bottom:1px solid #181826;position:relative;
+}
+.tl-body::before{
+  content:'';position:absolute;left:-37px;top:21px;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--pink);border:2px solid var(--bg);
+  box-shadow:0 0 0 3px #1a0a12;
+}
+.tl-entry.pre .tl-body::before{background:var(--dim);box-shadow:0 0 0 3px #111118}
+.tl-entry.lateral .tl-body::before{background:var(--amber);box-shadow:0 0 0 3px #1a1200}
+.tl-entry.post .tl-body::before{background:var(--pink);box-shadow:0 0 0 3px #1a0a12}
+.tl-event{
+  font-family:'Space Mono',monospace;font-size:0.8rem;font-weight:700;
+  color:var(--text);margin-bottom:5px;line-height:1.5;
+}
+.tl-detail{
+  font-family:'Space Mono',monospace;font-size:0.74rem;
+  color:var(--muted);line-height:1.7;margin-bottom:6px;
+}
+.tl-badge{
+  display:inline-block;font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;
+  margin-top:4px;margin-right:4px;
+}
+.b-pre{background:#12121e;color:#7a7aaa;border:1px solid #2a2a44}
+.b-lateral{background:#1a1200;color:#c08020;border:1px solid #3a2a00}
+.b-post{background:#1a0a12;color:#c02060;border:1px solid #3a1a28}
+.b-pth{background:#0a1820;color:#40a0c0;border:1px solid #1a4060}
+.b-rdp{background:#180d22;color:#a070e0;border:1px solid #3a1a5a}
+.b-smb{background:#0e180e;color:#60a060;border:1px solid #1a401a}
+
+/* event table */
+.ev-table{width:100%;border-collapse:collapse;margin:22px 0;font-family:'Space Mono',monospace;font-size:0.74rem}
+.ev-table th{
+  padding:9px 12px;text-align:left;background:var(--surface2);
+  color:var(--dim);border-bottom:1px solid var(--border);
+  font-weight:400;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;
+}
+.ev-table td{
+  padding:9px 12px;color:#c4c4d8;border-bottom:1px solid #181826;vertical-align:top;
+}
+.ev-table tr:hover td{background:var(--surface)}
+.ev-table .eid{color:var(--cyan);white-space:nowrap}
+.ev-table .ts{color:var(--dim);white-space:nowrap;font-size:0.7rem}
+.ev-table .method{color:var(--amber)}
+
+/* answer box */
+.answer-box{
+  background:var(--surface2);border:1px solid var(--pink);
+  padding:22px 26px;margin:32px 0;border-radius:4px;
+}
+.answer-q{
+  font-family:'Space Mono',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--pink);display:block;margin-bottom:14px;
+}
+.answer-row{
+  display:grid;grid-template-columns:160px 1fr;gap:8px 16px;
+  font-family:'Space Mono',monospace;font-size:0.8rem;margin-bottom:8px;
+}
+.answer-row:last-child{margin-bottom:0}
+.answer-ts{color:var(--muted);font-size:0.75rem}
+.answer-method{color:var(--text);font-weight:700}
+
+/* tool grid */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:24px 0}
+.tool-card{background:var(--surface);border:1px solid var(--border);padding:14px 16px;border-radius:4px}
+.tool-name{font-family:'Space Mono',monospace;font-size:0.82rem;font-weight:700;color:var(--cyan);margin-bottom:5px}
+.tool-meta{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--dim);line-height:1.65}
+
+/* pull quote */
+.pullquote{
+  font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:700;
+  color:var(--text);border-top:2px solid var(--pink);border-bottom:1px solid var(--border);
+  padding:22px 0;margin:40px 0;line-height:1.5;
+}
+
+/* divider */
+.divider{border:none;border-top:1px solid var(--border);margin:52px 0}
+
+/* footer */
+.footer{
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);
+  margin-top:64px;padding-top:20px;border-top:1px solid var(--border);line-height:1.8;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-brand">PinkPantheres</span>
+  <span class="topbar-sep">/</span>
+  <span class="topbar-series">Digital Forensics Challenge 2024</span>
+  <a href="../../index.html" class="topbar-back">← All Posts</a>
+</div>
+
+<div class="hero-eyebrow">Case 102 · Windows Event Log Forensics · Lateral Movement Analysis</div>
+
+<h1>Windows Lateral Movement — Every Move Logged</h1>
+
+<p class="hero-deck">
+  The attacker created two accounts, stole a hash, installed a malicious service, used Impacket's smbexec.py, then walked straight in through RDP. They thought they were being methodical. But they did all of it on a system that was logging everything — and they left a 26-hour trail from first account creation to final logoff.
+</p>
+
+<div class="meta-strip">
+  <div class="meta-cell"><strong>Challenge</strong>DFC 2024 · Case 102</div>
+  <div class="meta-cell"><strong>Category</strong>Digital Forensics</div>
+  <div class="meta-cell"><strong>Points</strong>100 pts</div>
+  <div class="meta-cell"><strong>Evidence</strong>102_target.vhdx</div>
+  <div class="meta-cell"><strong>MD5</strong>0cb76ba40ee240fcd236c752aaad9e07</div>
+</div>
+
+<div class="tags">
+  <span class="tag">#lateral-movement</span>
+  <span class="tag">#pass-the-hash</span>
+  <span class="tag">#impacket</span>
+  <span class="tag">#smbexec</span>
+  <span class="tag">#rdp</span>
+  <span class="tag">#windows-event-logs</span>
+  <span class="tag">#chainsaw</span>
+  <span class="tag">#dfc2024</span>
+</div>
+
+<h2>What We're Looking At</h2>
+
+<p class="lead">
+  The challenge brief describes a realistic corporate attack scenario: monitoring or security solution accounts are often added to administrator groups for convenience. Companies register them with the same password everywhere. An attacker who gets hold of those credentials — or just their hash — can move laterally across an entire environment without ever breaking encryption.
+</p>
+
+<p>
+  The task: analyze the VHDX image of a compromised Windows system, identify every timestamp where the attacker accessed the machine, and determine exactly which lateral movement methods and tools were used during each access. Timestamps needed to be UTC, exact to the second.
+</p>
+
+<p>
+  This is purely an event log forensics challenge. No malware reversing, no network captures. Just Windows Security logs, System logs, and the attacker's mistakes preserved in them.
+</p>
+
+<h2>Tools and Environment</h2>
+
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-name">FTK Imager 4.7.1.2</div>
+    <div class="tool-meta">Publisher: AccessData<br><br>Mounting the VHDX and extracting the event log files for offline analysis.</div>
+  </div>
+  <div class="tool-card">
+    <div class="tool-name">Chainsaw 2.10</div>
+    <div class="tool-meta">Publisher: WithSecureLabs<br>github.com/WithSecureLabs/chainsaw<br><br>Sigma-rule based hunting across all extracted EVTX files at once. Fast, gives you structured output you can actually read.</div>
+  </div>
+  <div class="tool-card">
+    <div class="tool-name">EvtxEcmd (EZ Tools)</div>
+    <div class="tool-meta">Publisher: Eric Zimmerman<br><br>Converting raw EVTX to CSV/JSON for timeline reconstruction and cross-referencing events manually.</div>
+  </div>
+</div>
+
+<h2>Starting Point: Hash Verification and Evidence Extraction</h2>
+
+<p>
+  Before I touch anything, I verify the hash. This is a discipline I don't skip — not because I think the evidence has been tampered with, but because if I ever need to defend this work, I need to prove chain of custody from the first step.
+</p>
+
+<pre><code>md5sum 102_target.vhdx
+0cb76ba40ee240fcd236c752aaad9e07  102_target.vhdx</code></pre>
+
+<p>
+  Hash matched. I mounted the VHDX in FTK Imager and extracted the event logs from <code>C:\Windows\System32\winevt\Logs\</code> — specifically <code>Security.evtx</code>, <code>System.evtx</code>, <code>Microsoft-Windows-TerminalServices-*.evtx</code>, and the WMI operational log. Then I ran Chainsaw across the full set and also went through them manually with EvtxEcmd output.
+</p>
+
+<p>
+  The reason I use both: Chainsaw is fast and catches known-bad patterns immediately, but it can miss things if the activity doesn't match a Sigma rule. Manual review of the EvtxEcmd CSV catches the gaps. Between the two, I'm confident I have the full picture.
+</p>
+
+<h2>Phase 1 — Pre-Lateral Movement: Account Setup</h2>
+
+<h3>Day 1: A Foothold Planted</h3>
+
+<p>
+  The earliest malicious activity in the logs is on 2024-05-18. The attacker creates a user account called <code>dean</code> on <code>DESKTOP-D3EB1AE</code> at 08:24:30 UTC. Within one second — literally one second later — there's an explicit credentials logon attempt using that same account (Event 4648). At 08:25:07 they log in locally as <code>dean</code> (Logon Type 2) from a machine called <code>WIN-4QC6J2CTQTS</code>.
+</p>
+
+<div class="callout think">
+  <div class="callout-label">// why this matters</div>
+  <p>Creating a user and immediately attempting to log in with explicit credentials within one second is not human behavior — it's scripted. This tells me the attacker wasn't manually typing at a keyboard. They had tooling that automated the account creation and first-use verification. That's a different threat profile than someone bumbling around manually.</p>
+</div>
+
+<p>
+  The same evening on WIN-4QC6J2CTQTS, two more accounts appear: <code>WDAGUtilityAccount</code> at 23:41:23 and <code>defaultuser0</code> at 23:43:24. The <code>defaultuser0</code> account is immediately added to the Administrators group (Event 4732). This is the attacker building out their administrative presence across the environment — not just one machine, multiple systems.
+</p>
+
+<h3>Day 2: The Real Account and Privilege Escalation</h3>
+
+<p>
+  The next morning, 2024-05-19 at 11:10:32, the attacker creates a second account on DESKTOP-D3EB1AE: <code>secadmin</code>. The name is deliberately chosen to blend in. In most corporate environments, a user called "secadmin" gets ignored — it sounds like a legitimate security administration account.
+</p>
+
+<p>
+  Simultaneously, they try to reset the password for the <code>dean</code> account (Event 4724). This is persistence management — they're making sure their original foothold account can't be locked out from under them.
+</p>
+
+<p>
+  Seven seconds later at 11:10:39: <code>secadmin</code> is added to the local Administrators group (Event 4732). Then at 11:12:13: local logon as <code>secadmin</code> (Logon Type 2). And right alongside that logon — Event 4797 fires, showing an attempt to query whether <code>secadmin</code> has a blank password, initiated by user <code>dean</code>. That's the attacker using their first account to probe the second one.
+</p>
+
+<p>
+  At 11:13:13, Event 4798: <code>secadmin</code> enumerates the local group membership of the <code>dean</code> account. They're checking their own work — making sure the accounts have the access they expect before they start moving laterally.
+</p>
+
+<div class="callout note">
+  <div class="callout-label">// the pattern I'm seeing</div>
+  <p>This is methodical pre-attack staging. Create account → escalate → verify → create second account → verify again → enumerate. Every step confirms the previous one worked before moving forward. It's operationally patient in a way that suggests either a practiced attacker or a playbook they're following.</p>
+</div>
+
+<hr class="divider">
+
+<h2>Phase 2 — Lateral Movement: Three Methods, 25 Minutes</h2>
+
+<p>
+  From 11:39 to 12:04 UTC on 2024-05-19 — 25 minutes — the attacker uses three distinct lateral movement methods in sequence. This is the part I found genuinely interesting to reconstruct, because each method leaves different evidence in different log sources.
+</p>
+
+<h3>Method 1: Pass-the-Hash (11:39:09)</h3>
+
+<p>
+  At 11:39:09 UTC, Event 4624 fires: a network logon (Logon Type 3) for <code>secadmin</code> from IP <code>192.168.40.134</code>. The logon process is <code>NtlmSsp</code>. No Kerberos. Source IP is not the local machine.
+</p>
+
+<p>
+  This is the Pass-the-Hash signature. Pass-the-Hash works by using an NTLM credential hash directly instead of the plaintext password — and NTLM is the giveaway. Modern Windows environments that enforce Kerberos won't show NtlmSsp as the logon process for legitimate remote authentication. Seeing it here, from an external IP, with a freshly created admin account, tells me the attacker captured the NTLM hash for <code>secadmin</code> and used it to authenticate without ever knowing — or needing — the actual password.
+</p>
+
+<div class="callout think">
+  <div class="callout-label">// the thing that clicked for me</div>
+  <p>The attacker <em>created</em> the <code>secadmin</code> account themselves — so they already know the password. Why use Pass-the-Hash at all? Because the tooling they're running (likely something from Impacket or a similar framework) defaults to hash-based NTLM auth for network logons. They didn't switch methods manually. The tool chose NtlmSsp. That tells me more about the attacker's toolkit than just the protocol — they're using a framework that handles everything automatically.</p>
+</div>
+
+<h3>Method 2: Impacket smbexec.py Service (11:39:09 and 11:56:57)</h3>
+
+<p>
+  At the exact same timestamp as the Pass-the-Hash logon — 11:39:09 — System Event 7045 fires: a new service named <code>uuLG</code> is installed at <code>%systemroot%\dEtwCyox.exe</code>. The service name is random-looking. The executable has an obfuscated name. This is a malicious service dropped to establish persistence and enable remote command execution.
+</p>
+
+<p>
+  Then at 11:56:57, another 7045 — this time a service called <code>ssdpxvtN</code>. The naming pattern here is the Impacket <code>smbexec.py</code> signature. smbexec.py works by creating a temporary service with a randomly generated name, using it to execute a command, then deleting the service. The fact that the service name is random and the creation is tied to a network logon over SMB is the fingerprint.
+</p>
+
+<pre><code># What smbexec.py does under the hood:
+# 1. Authenticates via SMB using stolen credentials
+# 2. Creates a service with a random name via the SCM (Service Control Manager)
+# 3. Executes attacker commands through that service
+# 4. Service removal happens after execution
+# → Event ID 7045 is the paper trail it leaves</code></pre>
+
+<p>
+  I confirmed this by correlating the 7045 events with the network logon records. Same source IP. Same user. Sequential timing. The attacker used Pass-the-Hash to authenticate via SMB, then smbexec.py to run commands remotely on the box — all within the same logon context.
+</p>
+
+<h3>Method 3: RDP (12:04:36 — 12:05:36)</h3>
+
+<p>
+  At 12:04:36 UTC, RdpCoreTS Event 131 fires: the RDP server on DESKTOP-D3EB1AE accepted a new TCP connection from <code>192.168.40.134:53552</code>. One second later at 12:04:37, TerminalServices-LocalSessionManager Event 1149 confirms the user authentication succeeded for <code>secadmin</code> connecting from <code>192.168.40.134</code>.
+</p>
+
+<p>
+  At 12:04:38: Security Event 4648 (explicit credentials logon) and Event 4624 with Logon Type 10 — that's the RDP logon type. The attacker now has a full graphical desktop session on DESKTOP-D3EB1AE.
+</p>
+
+<div class="callout warn">
+  <div class="callout-label">// something I noticed</div>
+  <p>The attacker used three different methods — PtH, smbexec, RDP — against the same machine in 25 minutes. PtH for initial access. smbexec for remote code execution without a GUI. Then RDP for interactive access. That progression makes sense: they used the command-line tools first to stage whatever they needed, then opened RDP to interact with the system directly. The shift from blind remote execution to interactive GUI access usually means they're about to do something that needs a visual interface — or they want to see the state of the machine themselves.</p>
+</div>
+
+<hr class="divider">
+
+<h2>Phase 3 — Post-Lateral Movement: What They Did Once Inside</h2>
+
+<p>
+  The RDP session was brief — under two minutes of active interaction before logoff. But the log entries from inside the session tell a story.
+</p>
+
+<p>
+  At 12:04:43, a WMI Event 5858 fires: a query targeting <code>Root\Rsop\User</code> attempting to delete an instance. This is likely automated tooling — something running on RDP connection that probes user policy settings. At 12:04:44, TS-LSM Event 21 confirms the RDP session logon succeeded and the file explorer shell started. The attacker has a desktop.
+</p>
+
+<p>
+  At 12:05:07, Security Event 5379: Credential Manager credentials were read by <code>secadmin</code>. This is credential theft — they're pulling whatever passwords or tokens are stored in Windows Credential Manager on this machine. Those credentials would give them lateral movement vectors to additional systems without needing to repeat the whole attack chain.
+</p>
+
+<p>
+  At 12:05:36, Event 4634 (logoff) and TS-LSM 40 (RDP session disconnected). At 12:06:13, Event 4647 (user-initiated logoff by secadmin). Then at 12:06:36, System Event 1074: user <code>dean</code> initiates a system restart.
+</p>
+
+<div class="callout think">
+  <div class="callout-label">// why trigger a restart</div>
+  <p>This is the part that made me pause. The attacker used <code>dean</code> — their original foothold account, not <code>secadmin</code> — to restart the machine. A restart clears active connections, flushes some volatile artifacts, and can disrupt monitoring tools or logging agents that don't survive reboots cleanly. It's a light anti-forensic step. Not sophisticated, but deliberate. They didn't log off and walk away quietly — they used dean to pull the rug on whatever was running.</p>
+</div>
+
+<hr class="divider">
+
+<h2>Full Attack Timeline</h2>
+
+<div class="timeline">
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-18<br>08:24:30 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Account Creation — user dean</div>
+      <div class="tl-detail">DESKTOP-D3EB1AE · Event 4720 · New user created with SID ending -1001</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-18<br>08:24:31 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Explicit Credentials Logon</div>
+      <div class="tl-detail">Event 4648 · Logon attempted with explicit credentials for dean — 1 second after creation</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-18<br>08:25:07 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Local Logon as dean</div>
+      <div class="tl-detail">Event 4624 · Logon Type 2 (interactive) · from WIN-4QC6J2CTQTS</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-18<br>23:41:23 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Account Creation — WDAGUtilityAccount</div>
+      <div class="tl-detail">WIN-4QC6J2CTQTS · Event 4720</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-18<br>23:43:24 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Account Creation + Privilege Escalation — defaultuser0</div>
+      <div class="tl-detail">WIN-4QC6J2CTQTS · Events 4720 + 4732 · defaultuser0 added to Administrators</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-19<br>11:10:32 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Account Creation — secadmin + Password Reset on dean</div>
+      <div class="tl-detail">DESKTOP-D3EB1AE · Events 4720 + 4724 · New admin account created, original account's password reset</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-19<br>11:10:39 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Privilege Escalation — secadmin added to Administrators</div>
+      <div class="tl-detail">DESKTOP-D3EB1AE · Event 4732</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-19<br>11:12:13 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Local Logon as secadmin + Blank Password Query</div>
+      <div class="tl-detail">Events 4624 (Type 2) + 4797 · dean queries blank password existence for secadmin</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry pre">
+    <div class="tl-time">2024-05-19<br>11:13:13 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">User Enumeration</div>
+      <div class="tl-detail">Event 4798 · secadmin enumerates local group membership of dean</div>
+      <span class="tl-badge b-pre">Pre-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry lateral">
+    <div class="tl-time">2024-05-19<br>11:39:09 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Pass-the-Hash Network Logon + Malicious Service</div>
+      <div class="tl-detail">Events 4624 (Type 3, NtlmSsp) + 7045 · secadmin from 192.168.40.134 · Service uuLG → dEtwCyox.exe installed</div>
+      <span class="tl-badge b-lateral">Lateral Movement</span>
+      <span class="tl-badge b-pth">Pass-the-Hash</span>
+      <span class="tl-badge b-smb">SMB</span>
+    </div>
+  </div>
+
+  <div class="tl-entry lateral">
+    <div class="tl-time">2024-05-19<br>11:56:57 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Impacket smbexec.py — Remote Code Execution via Service</div>
+      <div class="tl-detail">Event 7045 · Service ssdpxvtN created · random name pattern consistent with smbexec.py automated service creation</div>
+      <span class="tl-badge b-lateral">Lateral Movement</span>
+      <span class="tl-badge b-smb">Impacket / smbexec</span>
+    </div>
+  </div>
+
+  <div class="tl-entry lateral">
+    <div class="tl-time">2024-05-19<br>12:04:36 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">RDP Session Initiated</div>
+      <div class="tl-detail">RdpCoreTS Event 131 · TCP connection accepted from 192.168.40.134:53552</div>
+      <span class="tl-badge b-lateral">Lateral Movement</span>
+      <span class="tl-badge b-rdp">RDP</span>
+    </div>
+  </div>
+
+  <div class="tl-entry lateral">
+    <div class="tl-time">2024-05-19<br>12:04:38 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">RDP Logon as secadmin</div>
+      <div class="tl-detail">Events 4648 + 4624 (Type 10) · secadmin from 192.168.40.134 · full GUI session established</div>
+      <span class="tl-badge b-lateral">Lateral Movement</span>
+      <span class="tl-badge b-rdp">RDP / Type 10</span>
+    </div>
+  </div>
+
+  <div class="tl-entry post">
+    <div class="tl-time">2024-05-19<br>12:04:43 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">WMI Query — Root\Rsop\User Delete Attempt</div>
+      <div class="tl-detail">WMI Event 5858 · Possible automated user policy probe on RDP connection</div>
+      <span class="tl-badge b-post">Post-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry post">
+    <div class="tl-time">2024-05-19<br>12:05:07 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">Credential Theft — Credential Manager Read</div>
+      <div class="tl-detail">Event 5379 · secadmin reads stored credentials from Windows Credential Manager</div>
+      <span class="tl-badge b-post">Post-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry post">
+    <div class="tl-time">2024-05-19<br>12:05:36 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">RDP Logoff + Session Disconnect</div>
+      <div class="tl-detail">Events 4634 + TS-LSM 40 · secadmin session ends</div>
+      <span class="tl-badge b-post">Post-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry post">
+    <div class="tl-time">2024-05-19<br>12:06:13 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">User-Initiated Logoff — secadmin</div>
+      <div class="tl-detail">Event 4647</div>
+      <span class="tl-badge b-post">Post-Movement</span>
+    </div>
+  </div>
+
+  <div class="tl-entry post">
+    <div class="tl-time">2024-05-19<br>12:06:36 UTC</div>
+    <div class="tl-body">
+      <div class="tl-event">System Restart — triggered by dean</div>
+      <div class="tl-detail">System Event 1074 · Original foothold account used to restart machine</div>
+      <span class="tl-badge b-post">Post-Movement</span>
+    </div>
+  </div>
+
+</div>
+
+<h2>Answer Summary</h2>
+
+<div class="answer-box">
+  <span class="answer-q">Challenge Answer — Access Times and Methods</span>
+
+  <div class="answer-row">
+    <span class="answer-ts">2024-05-19 11:39:09</span>
+    <span class="answer-method">Pass-the-Hash (NTLM/NtlmSsp) · Network Logon Type 3 · Impacket framework · Malicious service installation (uuLG)</span>
+  </div>
+  <div class="answer-row">
+    <span class="answer-ts">2024-05-19 11:56:57</span>
+    <span class="answer-method">Impacket smbexec.py · SMB remote code execution via temporary service (ssdpxvtN)</span>
+  </div>
+  <div class="answer-row">
+    <span class="answer-ts">2024-05-19 12:04:36</span>
+    <span class="answer-method">RDP (Remote Desktop Protocol) · TCP connection + Network Logon Type 10 · secadmin from 192.168.40.134</span>
+  </div>
+</div>
+
+<h2>What This Investigation Reinforced</h2>
+
+<p>
+  Windows event logs, when you have the right log sources enabled, tell a remarkably complete story. The challenge scenario — stolen credentials used for lateral movement — is one of the most common attack patterns in real incident response. And yet it's almost entirely visible in the logs if you know where to look.
+</p>
+
+<p>
+  The three things I'd take from this analysis:
+</p>
+
+<ul>
+  <li><strong>Event 7045 is underrated.</strong> Most people focus on 4624 and 4648 for lateral movement detection. But 7045 — service installation — is often the cleaner indicator of tools like smbexec.py and psexec. The service name randomization that Impacket uses is itself a detectable pattern.</li>
+  <li><strong>NtlmSsp as a logon process on a modern network is a red flag.</strong> Kerberos should be handling legitimate remote auth. When you see NtlmSsp in 4624 events for network logons, especially from external IPs, that's Pass-the-Hash territory until proven otherwise.</li>
+  <li><strong>The attacker's operational security was inconsistent.</strong> They automated account creation (scripted, one-second timing), used a naming convention that blends in (<code>secadmin</code>), and triggered a restart to clean up volatile state — but they also left a full 26-hour trail of Event IDs and didn't clear the Security log before leaving. Good tradecraft in some areas, sloppy in others. That inconsistency is itself a pattern worth noting when profiling an attacker.</li>
+</ul>
+
+<div class="pullquote">
+  They used three different lateral movement methods in 25 minutes. Every single one left a different evidence type in a different log source. That's what makes this a good forensics challenge — and a realistic one.
+</div>
+
+<div class="footer">
+  <p>© <span id="yr"></span> Hridhya P · PinkPantheres · DFIR · OSINT · CTF</p>
+  <p style="margin-top:6px"><a href="../../index.html" style="color:var(--dim);text-decoration:none">← Back to all posts</a></p>
+</div>
+
+<script>document.getElementById('yr').textContent=new Date().getFullYear()</script>
+</body>
+</html>

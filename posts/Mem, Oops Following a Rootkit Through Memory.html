@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DFC 2025 – Mem, Oops | DFIR Writeup</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#0a0a0f;--surface:#111118;--border:#2a2a3a;--pink:#ff2d78;--cyan:#00f5d4;
+--amber:#f5a623;--text:#e8e8f0;--muted:#8b8ba7;--dim:#5a5a7a;
+}
+*{box-sizing:border-box} body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;max-width:900px;margin:auto;padding:48px 32px;line-height:1.8}
+h1{font-size:3rem} h2{border-left:4px solid var(--pink);padding-left:12px;margin-top:55px}
+p,li{font-family:"Space Mono",monospace;color:#cfd0df;font-size:.88rem}
+pre{background:#0c0c16;border-left:4px solid var(--pink);padding:16px;overflow:auto}
+.hero{margin-bottom:40px}.eyebrow{font-family:"Space Mono";color:var(--cyan);text-transform:uppercase;font-size:11px;letter-spacing:.15em}
+.deck{font-family:"Space Mono";color:var(--muted)}
+.callout{background:var(--surface);border-left:4px solid var(--cyan);padding:18px;margin:25px 0}
+.timeline{border-left:1px solid var(--border);padding-left:24px}
+.event{margin:20px 0}
+.time{color:var(--pink);font-family:"Space Mono";font-size:12px}
+.tag{display:inline-block;border:1px solid var(--border);padding:3px 8px;margin:2px;font-family:"Space Mono";font-size:10px}
+</style>
+</head>
+<body>
+
+<div class="hero">
+<div class="eyebrow">DFC 2025 · Memory Forensics · Linux Rootkit Investigation</div>
+<h1>Mem, Oops: Following a Rootkit Through Memory</h1>
+<p class="deck">
+A Linux memory image. An unsigned kernel module. A process that looked ordinary at first glance.
+What began as a routine memory triage quickly turned into a layered investigation involving a Diamorphine-style rootkit, a userland RAT, stealth mechanisms, and persistence engineered to survive reboots.
+</p>
+</div>
+
+<div>
+<span class="tag">#memoryforensics</span>
+<span class="tag">#volatility3</span>
+<span class="tag">#linux</span>
+<span class="tag">#rootkit</span>
+<span class="tag">#dfir</span>
+<span class="tag">#malwareanalysis</span>
+</div>
+
+<h2>Summary</h2>
+
+<p>
+The challenge provided only memory artifacts, which immediately shaped my investigative strategy. Rather than searching disks for malware, I had to reconstruct attacker activity purely from memory structures, kernel objects, recovered files, process artifacts, and binary analysis.
+</p>
+
+<p>
+My investigation ultimately revealed a two-component intrusion: a kernel-space rootkit masquerading as <code>netcore.ko</code> and a userland remote access trojan named <code>dc_core</code>. Together they provided stealth, command execution, privilege escalation, persistence, and anti-forensic capabilities. The interesting part was not simply identifying the malware family it was understanding how each component complemented the other.
+</p>
+
+<h2>How I Approached the Investigation</h2>
+
+<p>
+The first question I asked myself was simple: can I trust the memory image enough to start drawing conclusions? After validating the supplied hashes, I moved directly into Volatility 3 analysis.
+</p>
+
+<p>
+The banner output showed that the target was a CentOS Stream 9 system. Because Linux memory analysis with Volatility 3 depends heavily on accurate kernel symbols, I spent time generating a compatible ISF file instead of rushing into plugin execution. That decision paid off later because it allowed reliable parsing of kernel structures and modules.
+</p>
+
+<pre><code>vol.py -f mem.vmem linux.banners.Banners
+vol.py -f mem.vmem linux.lsmod
+vol.py -f mem.vmem linux.psscan</code></pre>
+
+<p>
+One lesson I have learned repeatedly in memory investigations is that anomalies rarely introduce themselves loudly. Instead, they appear as small inconsistencies across independent data sources. In this case, that inconsistency was an unsigned out-of-tree kernel module named <code>netcore</code>.
+</p>
+
+<h2>The Pivot Moment</h2>
+
+<div class="callout">
+<p>
+The investigation changed direction the moment I saw the same module appearing across multiple Volatility plugins. A suspicious kernel module can be noise. The same module appearing in module listings, process relationships, and memory-resident file structures is usually a signal.
+</p>
+</div>
+
+<p>
+I pivoted from host triage to malware-centric analysis. Using page cache artifacts, I recovered both the kernel module and its associated userland binary. Rather than relying exclusively on static indicators, I treated them as evidence sources that could explain everything else I was seeing in memory.
+</p>
+
+<h2>Uncovering the Rootkit</h2>
+
+<p>
+Analysis of <code>netcore.ko</code> showed behavior strongly aligned with the Diamorphine rootkit family. What interested me most was its operational design.
+</p>
+
+<ul>
+<li>System call hooking of getdents/getdents64.</li>
+<li>Process hiding through manipulated task structures.</li>
+<li>Privilege escalation through specially crafted signals.</li>
+<li>Module self-concealment to evade administrator inspection.</li>
+<li>Kernel-level file hiding capabilities.</li>
+</ul>
+
+<p>
+Instead of creating a custom command channel, the actor repurposed the kill() syscall. That design choice is elegant from an attacker perspective because it blends malicious control traffic into legitimate operating system behavior.
+</p>
+
+<h2>The Userland Companion</h2>
+
+<p>
+The deeper I went, the more it became clear that the rootkit was only half of the story. The recovered <code>dc_core</code> binary functioned as a remote access trojan that handled command-and-control operations.
+</p>
+
+<p>
+What stood out was the separation of responsibilities. The rootkit focused on stealth and concealment. The RAT focused on persistence, communication, and execution. Individually they were useful. Together they formed a resilient intrusion platform.
+</p>
+
+<ul>
+<li>Encrypted configuration storage.</li>
+<li>Periodic beaconing to a remote controller.</li>
+<li>Remote command execution.</li>
+<li>Privilege escalation attempts.</li>
+<li>Persistence installation routines.</li>
+</ul>
+
+<h2>Persistence Was the Real Objective</h2>
+
+<p>
+When I examined the persistence routines, I realized the attacker was planning for failure. Instead of relying on a single startup mechanism, they layered multiple independent recovery paths.
+</p>
+
+<ul>
+<li>Systemd service installation.</li>
+<li>Root cron entries.</li>
+<li>UDEV-triggered execution.</li>
+</ul>
+
+<p>
+This redundancy tells us something important about the operator. The goal was not a quick smash-and-grab compromise. The goal was long-term access.
+</p>
+
+<h2>A Second Layer of Stealth</h2>
+
+<p>
+One of the more interesting findings was a trojanized shared library loaded through <code>/etc/ld.so.preload</code>. The rootkit already hid files at the kernel level, yet the actor added userland hiding through hooked directory enumeration functions.
+</p>
+
+<p>
+That choice reflects a mindset I often look for during investigations: defense in depth, but from the attacker's perspective. If one hiding mechanism fails, another continues protecting the malware ecosystem.
+</p>
+
+<div class="callout">
+<p>
+Kernel-level hiding filtered specific entries before user tools could see them. Userland hooks filtered directory listings even when analysts interacted with the filesystem normally. Together they dramatically reduced visibility.
+</p>
+</div>
+
+<h2>Reconstructed Attack Timeline</h2>
+
+<div class="timeline">
+<div class="event">
+<div class="time">23:37 UTC</div>
+<p>Initial reconnaissance activity begins within attacker-controlled directories.</p>
+</div>
+
+<div class="event">
+<div class="time">23:39 UTC</div>
+<p>SELinux disabled to reduce defensive friction and simplify module loading.</p>
+</div>
+
+<div class="event">
+<div class="time">23:42 UTC</div>
+<p>Forced kernel module loading attempts continue despite compatibility issues.</p>
+</div>
+
+<div class="event">
+<div class="time">23:46 UTC</div>
+<p>Rootkit successfully loaded into the kernel.</p>
+</div>
+
+<div class="event">
+<div class="time">23:48 UTC</div>
+<p>Deployment script executes. Persistence and stealth infrastructure installed.</p>
+</div>
+
+<div class="event">
+<div class="time">23:50 UTC</div>
+<p>Automated execution mechanisms become active.</p>
+</div>
+
+<div class="event">
+<div class="time">Post-Reboot</div>
+<p>Malicious services automatically restart, confirming persistence survived reboot conditions.</p>
+</div>
+</div>
+
+<h2>What Made This Challenge Interesting</h2>
+
+<p>
+Many memory challenges focus on artifact recovery. This one rewarded correlation. No single artifact completely explained the intrusion. The kernel module explained concealment. The RAT explained communications. The preload hook explained visibility gaps. The persistence mechanisms explained reboot survival.
+</p>
+
+<p>
+The challenge was solved by continuously asking a simple question: if this artifact exists, what behavior does it explain elsewhere in memory?
+</p>
+
+<h2>Lessons Learned</h2>
+
+<ul>
+<li>Unsigned kernel modules deserve immediate scrutiny.</li>
+<li>Memory-only investigations can reveal persistence mechanisms without disk access.</li>
+<li>Rootkits rarely operate alone; supporting components often provide the real operational capability.</li>
+<li>Cross-validating evidence across processes, modules, logs, and binaries dramatically reduces false assumptions.</li>
+</ul>
+
+<h2>Final Thoughts</h2>
+
+<p>
+What I enjoyed most about this challenge was the progression from uncertainty to clarity. At the beginning, all I had was a memory image and a report of anomalous communications. By the end, I could reconstruct not only what malware was present, but also how the operator thought: conceal first, persist aggressively, and maintain multiple fallback mechanisms.
+</p>
+
+<p>
+That mindset became visible because memory preserves relationships. Processes reveal modules. Modules reveal binaries. Binaries reveal intent. The real investigation was connecting those layers together until the attacker's operational design became impossible to ignore.
+</p>
+
+</body>
+</html>

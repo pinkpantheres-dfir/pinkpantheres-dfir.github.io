@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DFC 2024 — 151: Careless Drug Dealer · PinkPantheres</title>
+  <meta name="description" content="A drug dealer hid a ledger inside a PNG. The filesystem knew exactly where he'd been. exFAT timezone forensics, file carving, and timestamp reconstruction — DFC 2024 challenge 151 writeup." />
+  <link rel="icon" href="../../assets/cat.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --pink: #ff2d78;
+      --pink-dim: #ff2d7844;
+      --pink-glow: #ff2d7822;
+      --cyan: #00f5d4;
+      --orange: #fb923c;
+      --green: #4ade80;
+      --purple: #a78bfa;
+      --text: #e8e8f0;
+      --muted: #7a7a9a;
+      --tag-bg: #1e1e2e;
+      --code-bg: #0d0d16;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0; border-bottom: 1px solid var(--border);
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .nav-logo { width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid var(--pink); overflow: hidden; }
+    .nav-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .nav-name { font-size: 16px; font-weight: 800; color: var(--pink); }
+    .nav-back { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .nav-back:hover { color: var(--pink); }
+
+    .post-header { padding: 52px 0 36px; animation: fadeUp 0.5s ease both; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .post-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+
+    .badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1.5px; padding: 3px 9px; border-radius: 4px;
+    }
+    .badge-forensics { background: #ff2d7818; color: var(--pink); border: 1px solid #ff2d7840; }
+    .badge-ctf       { background: #00f5d418; color: var(--cyan); border: 1px solid #00f5d440; }
+    .badge-muted     { background: var(--tag-bg); color: var(--muted); border: 1px solid var(--border); }
+
+    .post-title {
+      font-size: clamp(28px, 5vw, 46px); font-weight: 800;
+      letter-spacing: -1.5px; line-height: 1.08; margin-bottom: 18px;
+    }
+    .post-title .accent { color: var(--pink); }
+
+    .post-desc {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: var(--muted); line-height: 1.9; margin-bottom: 22px; max-width: 640px;
+    }
+
+    .post-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      padding: 3px 9px; background: var(--tag-bg);
+      border: 1px solid var(--border); border-radius: 4px; color: var(--muted);
+    }
+
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    .toc {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--pink); border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 44px;
+    }
+    .toc-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--pink); margin-bottom: 14px;
+    }
+    .toc ol { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+    .toc a {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: var(--muted); text-decoration: none; transition: color 0.2s;
+    }
+    .toc a:hover { color: var(--cyan); }
+
+    .post-body { animation: fadeUp 0.5s 0.12s ease both; padding-bottom: 80px; }
+
+    .post-body h2 {
+      font-size: 21px; font-weight: 800; letter-spacing: -0.5px;
+      margin: 56px 0 16px; color: var(--text);
+      padding-left: 16px; position: relative;
+    }
+    .post-body h2::before {
+      content: ''; position: absolute;
+      left: 0; top: 3px; bottom: 3px;
+      width: 3px; background: var(--pink); border-radius: 2px;
+    }
+
+    .post-body h3 {
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+      color: var(--cyan); margin: 32px 0 10px;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .post-body p {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      line-height: 2.05; color: #c4c4d4; margin-bottom: 18px;
+    }
+
+    .post-body strong { color: var(--text); }
+
+    .post-body a { color: var(--pink); text-decoration: none; border-bottom: 1px solid var(--pink-dim); transition: border-color 0.2s; }
+    .post-body a:hover { border-color: var(--pink); }
+
+    .post-body ul, .post-body ol {
+      font-family: 'Space Mono', monospace; font-size: 13px; color: #c4c4d4;
+      line-height: 2.05; padding-left: 22px; margin-bottom: 16px;
+    }
+    .post-body li::marker { color: var(--pink); }
+    .post-body li { margin-bottom: 4px; }
+
+    .post-body pre {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-left: 3px solid var(--pink); border-radius: 8px;
+      padding: 20px; overflow-x: auto; margin: 22px 0;
+    }
+    .post-body pre code {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: #c8c8d8; line-height: 1.85;
+      background: none; border: none; padding: 0;
+    }
+    .post-body code {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      background: var(--code-bg); border: 1px solid var(--border);
+      padding: 2px 6px; border-radius: 4px; color: var(--cyan);
+    }
+    .post-body pre code { color: #c8c8d8; background: none; border: none; padding: 0; }
+
+    /* CALLOUTS */
+    .callout {
+      border: 1px solid var(--border); border-left: 3px solid var(--cyan);
+      background: var(--surface); border-radius: 8px;
+      padding: 18px 22px; margin: 24px 0;
+    }
+    .callout.warn   { border-left-color: var(--orange); }
+    .callout.flag   { border-left-color: var(--pink); }
+    .callout.answer { border-left-color: var(--green); background: #0a150f; }
+    .callout.think  { border-left-color: var(--purple); background: #100d18; }
+
+    .callout-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--cyan); margin-bottom: 10px;
+    }
+    .callout.warn   .callout-label { color: var(--orange); }
+    .callout.flag   .callout-label { color: var(--pink); }
+    .callout.answer .callout-label { color: var(--green); }
+    .callout.think  .callout-label { color: var(--purple); }
+
+    .callout p {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: #b0b0c8; margin: 0; line-height: 1.85;
+    }
+
+    /* HEX TABLE */
+    .hex-wrap {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; overflow-x: auto; margin: 22px 0;
+    }
+    .hex-table {
+      width: 100%; border-collapse: collapse;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+    }
+    .hex-table th {
+      padding: 9px 14px; text-align: left;
+      background: var(--surface2); color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 400; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .hex-table td {
+      padding: 9px 14px; color: #c8c8d8;
+      border-bottom: 1px solid #18181f; vertical-align: middle;
+    }
+    .hex-table tr:last-child td { border-bottom: none; }
+    .hl-create { color: #ff2d78; font-weight: 700; }
+    .hl-mod    { color: var(--cyan); font-weight: 700; }
+    .hl-acc    { color: var(--orange); }
+
+    /* TZ TABLE */
+    .tz-table {
+      width: 100%; border-collapse: collapse;
+      font-family: 'Space Mono', monospace; font-size: 12px; margin: 16px 0 24px;
+    }
+    .tz-table th {
+      padding: 10px 14px; text-align: left; background: var(--surface2);
+      color: var(--muted); border: 1px solid var(--border);
+      font-weight: 400; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .tz-table td { padding: 10px 14px; color: #c8c8d8; border: 1px solid var(--border); }
+    .tz-table tr:hover td { background: var(--surface2); }
+    .tz-highlight  td { color: var(--pink) !important; font-weight: 700; }
+    .tz-highlight2 td { color: var(--cyan) !important; font-weight: 700; }
+
+    /* TIMELINE */
+    .timeline { margin: 28px 0; padding: 0; list-style: none; }
+    .timeline li {
+      position: relative; padding: 0 0 30px 30px;
+      border-left: 1px solid var(--border);
+    }
+    .timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+    .timeline li::before {
+      content: ''; position: absolute; left: -5px; top: 5px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--pink); box-shadow: 0 0 8px var(--pink-dim);
+    }
+    .tl-time {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
+    }
+    .tl-event {
+      font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text); line-height: 1.6;
+    }
+    .tl-detail {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--muted); margin-top: 5px; line-height: 1.7;
+    }
+
+    .post-nav {
+      border-top: 1px solid var(--border); padding: 32px 0;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .post-nav a {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--muted); text-decoration: none; transition: color 0.2s;
+    }
+    .post-nav a:hover { color: var(--pink); }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 20px 0;
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    footer p { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <a class="nav-brand" href="../../index.html">
+      <div class="nav-logo"><img src="../../assets/cat.png" alt="logo"></div>
+      <span class="nav-name">PinkPantheres</span>
+    </a>
+    <a href="../../index.html" class="nav-back">← All Posts</a>
+  </nav>
+
+  <header class="post-header">
+    <div class="post-meta">
+      <span class="badge badge-forensics">forensics</span>
+      <span class="badge badge-ctf">DFC 2024</span>
+      <span class="badge badge-muted">2024-11-01</span>
+      <span class="badge badge-muted">10 min read</span>
+    </div>
+    <h1 class="post-title">151 — <span class="accent">Careless</span><br>Drug Dealer</h1>
+    <p class="post-desc">
+      He renamed a text file to a PNG and thought that was enough. It wasn't. The content was hidden — barely. But the filesystem had been quietly writing down everywhere he'd been, one timezone byte at a time. He was careless. The exFAT directory entry wasn't.
+    </p>
+    <div class="post-tags">
+      <span class="tag">#exFAT</span>
+      <span class="tag">#timestamp-forensics</span>
+      <span class="tag">#file-carving</span>
+      <span class="tag">#timezone-analysis</span>
+      <span class="tag">#autopsy</span>
+      <span class="tag">#DFC2024</span>
+    </div>
+  </header>
+
+  <hr class="divider">
+
+  <div class="toc">
+    <div class="toc-label">// Contents</div>
+    <ol>
+      <li><a href="#setup">The Setup</a></li>
+      <li><a href="#q1">Finding the Ledger</a></li>
+      <li><a href="#q2">The Timezone Rabbit Hole</a></li>
+      <li><a href="#q3">Turning Hex Into a Travel Route</a></li>
+      <li><a href="#reflection">What This Challenge Taught Me</a></li>
+    </ol>
+  </div>
+
+  <article class="post-body">
+
+    <h2 id="setup">The Setup</h2>
+
+    <p>The scenario: Suspect A has been arrested coming back from an international trip. Police believe he's been selling drugs across cities — two cities specifically, though they don't know which ones. They've got his USB. And they need something specific from it: not just timestamps, but the <strong>local</strong> timestamps — meaning they need to know what timezone the files were in when they were created and modified. That's how they'll figure out the cities.</p>
+
+    <div class="callout flag">
+      <div class="callout-label">// Evidence</div>
+      <p>File: <code>USB.zip</code> &nbsp;|&nbsp; MD5: <code>9e6463aa60b403697222b1442df54a68</code></p>
+    </div>
+
+    <p>I verified the hash first — always. A mismatched hash before you've even started means you're working on corrupted or tampered evidence. Once that checked out, I unzipped it and loaded <code>USB.dd</code> into Autopsy.</p>
+
+    <p>Three questions to answer: find the ledger, identify the timezones, then reconstruct the exact local timestamps in UTC. Simple on paper. The third one is where it gets deep.</p>
+
+
+    <h2 id="q1">Finding the Ledger</h2>
+
+    <p>My first instinct with any USB image: sort files by extension in Autopsy and immediately start looking for things that don't belong. Not by filename — names lie. By what the file <em>actually is</em>. People who want to hide things almost always reach for the simplest trick: rename the file. Change the extension. They think that's enough.</p>
+
+    <p>The USB had a folder full of PNGs. Landscape photos, wildlife documentaries, the kind of thing someone would have if they wanted to look like a casual tourist. Most of them? Perfectly normal. But one entry in the file listing immediately broke the pattern:</p>
+
+    <div class="callout think">
+      <div class="callout-label">// what caught my eye</div>
+      <p>Every other file had timestamps clustered around the same window — Modified Time around 10:21 to 10:28 on 2024-06-30. Makes sense if someone just dumped a bunch of files onto a USB in one sitting. But <code>wildlife documentaries.png</code> had a Modified Time of 15:40:12 on 2024-07-03. Three days later. A completely different date. That kind of temporal outlier — before I even open the file — is already telling a story. Something happened to this file separately from everything else.</p>
+    </div>
+
+    <p>I ran <code>file</code> on it anyway, just to confirm what I already suspected:</p>
+
+    <pre><code>file "wildlife documentaries.png"
+wildlife documentaries.png: ASCII text, with CRLF line terminators</code></pre>
+
+    <p>Not a PNG. Not even close. Plain ASCII text with Windows line endings. The kind of file you'd create in Notepad.</p>
+
+    <p>Opening it — it was a structured drug sales ledger. Eight transactions, fully detailed. Supplier names, buyer names, product types (cocaine, heroin, MDMA, ketamine, meth, LSD), quantities, prices, payment methods, delivery methods, witnesses, and notes. Whoever wrote this was meticulous about record-keeping. Ironic, given what it cost them.</p>
+
+    <p>The effort to hide it was minimal. Rename it, put it in a folder with photos, done. No encryption, no steganography, nothing sophisticated. Just a wrong file extension. That was the "careless" in the challenge title — and honestly, in real cases, it's more common than you'd think.</p>
+
+    <div class="callout answer">
+      <div class="callout-label">// Q1 Answer</div>
+      <p>The drug trade ledger file is: <code>wildlife documentaries.png</code></p>
+    </div>
+
+
+    <h2 id="q2">The Timezone Rabbit Hole</h2>
+
+    <p>This is the question that made the challenge genuinely interesting. It doesn't just ask for timestamps — it asks for timezone values. That's a very specific ask, and it told me exactly where to look.</p>
+
+    <p>When most people think about file timestamps, they think about what their forensics tool shows them. Autopsy will display a nicely formatted date and time. But that's already interpreted. To get timezone values, you need to go under the hood and look at the raw directory entry in hex — because that's where the filesystem actually stores the offset.</p>
+
+    <h3>A quick word on why exFAT is different</h3>
+
+    <p>FAT32 — the filesystem most USB drives used to use — stores timestamps in local time with zero timezone context. There's simply no field for it. You get a date and time, but you have no idea what timezone it was in. For investigators, this is a nightmare in cross-border cases.</p>
+
+    <p>exFAT fixed this. It introduced UTC offset bytes in the directory entry — one byte each for Created, Modified, and Accessed time. Each byte encodes a signed offset from UTC in 15-minute increments. So if you know how to read them, the filesystem tells you not just <em>when</em> but <em>where</em> — or at least, in what timezone.</p>
+
+    <p>The moment I saw the challenge was asking for timezone values specifically, I knew this was going to be an exFAT hex-level problem. Autopsy's parsed view wouldn't be enough.</p>
+
+    <h3>Hunting the entry in hex</h3>
+
+    <p>I went to Autopsy's hex view and started hunting through deleted directory entries — entries marked with type code <code>0x05</code>, which means the file has been deleted but the directory entry is still there in the raw data. That's where the ledger file was. It had been deleted, but exFAT doesn't wipe the entry immediately — it just marks it. The bytes are still there if you go looking.</p>
+
+    <p>Once I located the entry for <code>wildlife documentaries.png</code>, I mapped out the relevant fields:</p>
+
+    <div class="hex-wrap">
+      <table class="hex-table">
+        <thead>
+          <tr><th>Offset</th><th>Value</th><th>Field</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0x18–0x1B</td><td><span class="hl-create">F9 53 DE 58</span></td><td>Created timestamp (MS-DOS 32-bit)</td></tr>
+          <tr><td>0x1C–0x1F</td><td><span class="hl-mod">06 7D E3 58</span></td><td>Last Modified timestamp (MS-DOS 32-bit)</td></tr>
+          <tr><td>0x20–0x23</td><td><span class="hl-acc">95 61 DB 4C</span></td><td>Last Accessed timestamp</td></tr>
+          <tr><td>0x58</td><td><span class="hl-create">D8</span></td><td><strong>CR Time Zone Code ← this is what we want</strong></td></tr>
+          <tr><td>0x59</td><td><span class="hl-mod">92</span></td><td><strong>Mod Time Zone Code ← and this</strong></td></tr>
+          <tr><td>0x5A</td><td><span class="hl-acc">92</span></td><td>Acc Time Zone Code</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Two bytes. <code>0xD8</code> for creation, <code>0x92</code> for last modified. Now I needed to map those to actual UTC offsets using the exFAT timezone table:</p>
+
+    <table class="tz-table">
+      <thead>
+        <tr><th>Hex</th><th>UTC Offset</th><th>Hex</th><th>UTC Offset</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0xB8</td><td>UTC+14</td><td>0x80</td><td>UTC</td></tr>
+        <tr><td>0xAC</td><td>UTC+11</td><td>0xFC</td><td>UTC-1</td></tr>
+        <tr><td>0xA8</td><td>UTC+10</td><td>0xF0</td><td>UTC-4</td></tr>
+        <tr><td>0xA4</td><td>UTC+9</td><td>0xE8</td><td>UTC-6</td></tr>
+        <tr><td>0xA0</td><td>UTC+8</td><td>0xE0</td><td>UTC-8</td></tr>
+        <tr><td>0x9C</td><td>UTC+7</td><td>0xDC</td><td>UTC-9</td></tr>
+        <tr><td>0x98</td><td>UTC+6</td><td><span class="hl-create">0xD8</span></td><td><span class="hl-create">UTC-10</span></td></tr>
+        <tr><td>0x94</td><td>UTC+5</td><td>0xD4</td><td>UTC-11</td></tr>
+        <tr class="tz-highlight2"><td>0x92</td><td>UTC+4:30</td><td>0xD0</td><td>UTC-12</td></tr>
+        <tr><td>0x90</td><td>UTC+4</td><td>0x88</td><td>UTC+2</td></tr>
+        <tr><td>0x8C</td><td>UTC+3</td><td>0x84</td><td>UTC+1</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout think">
+      <div class="callout-label">// the moment it clicked</div>
+      <p>UTC-10 and UTC+4:30. I sat with those for a second. UTC-10 is Hawaii — or technically any UTC-10 territory, but Hawaii is the obvious one. UTC+4:30 is Afghanistan. Kabul. So the ledger was created somewhere in the Pacific and then opened and modified in Afghanistan. The filesystem just drew me a route. Two cities the police couldn't identify from interviews — and they were sitting right there in two bytes of the directory entry that the suspect probably didn't even know existed.</p>
+    </div>
+
+    <div class="callout answer">
+      <div class="callout-label">// Q2 Answer</div>
+      <p>Creation timezone: <code>0xD8</code> → <strong>UTC-10</strong><br>
+      Modification timezone: <code>0x92</code> → <strong>UTC+4:30</strong></p>
+    </div>
+
+
+    <h2 id="q3">Turning Hex Into a Travel Route</h2>
+
+    <p>The last question asks for the actual local timestamps in UTC format. This is where the previous two questions pay off — you can't do this without knowing the timezone offsets first.</p>
+
+    <p>Autopsy parsed the MS-DOS timestamp fields from the directory entry and showed me the local times directly:</p>
+
+    <ul>
+      <li>Creation time (local, UTC-10): <code>2024-06-30 10:31:50</code></li>
+      <li>Modification time (local, UTC+4:30): <code>2024-07-03 15:40:12</code></li>
+    </ul>
+
+    <p>These are the times as the device experienced them — the clock on the machine in that timezone. To convert to UTC you just apply the offset in reverse:</p>
+
+    <h3>Creation → UTC</h3>
+    <pre><code>Local time (UTC-10):  2024-06-30 10:31:50
+Add 10 hours:         2024-06-30 20:31:50 UTC</code></pre>
+
+    <h3>Modification → UTC</h3>
+    <pre><code>Local time (UTC+4:30): 2024-07-03 15:40:12
+Subtract 4h 30m:       2024-07-03 11:10:12
+→ UTC:                 2024-07-03 20:10 (minute precision as required)</code></pre>
+
+    <div class="callout warn">
+      <div class="callout-label">// note on precision</div>
+      <p>MS-DOS timestamps in exFAT have 2-second granularity in the main field, with a separate centisecond offset field for finer resolution. The question format asked for <code>YYYY-MM-DD HH:MM</code> — minute precision — so that's what we report. The seconds are there in the raw data if you need them.</p>
+    </div>
+
+    <div class="callout answer">
+      <div class="callout-label">// Q3 Answer</div>
+      <p>Creation time (UTC+00:00): <strong>2024-06-30 20:31:50</strong><br>
+      Modification time (UTC+00:00): <strong>2024-07-03 20:10</strong></p>
+    </div>
+
+    <p>And now the picture is complete. The ledger was created on June 30th in a UTC-10 timezone — almost certainly Hawaii — and modified three days later on July 3rd in UTC+4:30, which puts it in Afghanistan. That's the travel route. That's what the police needed for the joint investigation.</p>
+
+    <ul class="timeline">
+      <li>
+        <div class="tl-time">2024-06-30 10:31 local → 20:31 UTC (UTC-10)</div>
+        <div class="tl-event">Ledger created — City 1, UTC-10 region</div>
+        <div class="tl-detail">File disguised as a PNG. First set of transactions recorded — NYC delivery, Central Station locker drop, bitcoin payments.</div>
+      </li>
+      <li>
+        <div class="tl-time">2024-07-03 15:40 local → 11:10 UTC (UTC+4:30)</div>
+        <div class="tl-event">Ledger modified — City 2, UTC+4:30 region</div>
+        <div class="tl-detail">New transactions added. Same file, still sitting on the USB with the wrong extension. Still trusted to stay hidden.</div>
+      </li>
+      <li>
+        <div class="tl-time">After 2024-07-03</div>
+        <div class="tl-event">Suspect A arrested on return</div>
+        <div class="tl-detail">USB seized. The timezone bytes he never thought about became the most important two bytes in the investigation.</div>
+      </li>
+    </ul>
+
+
+    <h2 id="reflection">What This Challenge Taught Me</h2>
+
+    <p>On the surface this challenge looks simple — find a file, read some timestamps. But the reason I think it's a genuinely well-designed forensics problem is because it forces you to understand <em>why</em> exFAT stores what it stores, not just how to read it.</p>
+
+    <p>Most people doing USB forensics never go past what Autopsy's parsed view shows them. And in 90% of cases that's fine. But the moment you're dealing with international jurisdiction questions — where was this device, when, in what timezone — you need to know that FAT32 is blind and exFAT isn't. You need to know that those two bytes at offset <code>0x58</code> and <code>0x59</code> exist, what they mean, and how to find them when the file has been deleted.</p>
+
+    <p>The suspect renamed a file. He didn't understand how filesystems work. That asymmetry — his blind spot versus my understanding — is exactly what makes digital forensics interesting to me. You don't need to make mistakes to get caught. You just need to not know what the filesystem is remembering about you.</p>
+
+    <div class="callout">
+      <div class="callout-label">// takeaway</div>
+      <p>On exFAT volumes, always inspect bytes <code>0x58</code>–<code>0x5A</code> of the File Entry directory structure — even on deleted entries. The CR/Mod/Acc timezone codes survive deletion and can place a device in a specific geographic region without any other corroborating evidence. FAT32 gives you nothing here. exFAT gives you everything.</p>
+    </div>
+
+  </article>
+
+  <div class="post-nav">
+    <a href="../../index.html">← All posts</a>
+    <a href="../dfc2024-app-sleuth/index.html">DFC 2024 — App Sleuth →</a>
+  </div>
+
+  <footer>
+    <p>© <span id="year"></span> Hridhya P — PinkPantheres</p>
+    <p>DFIR · OSINT · CTF</p>
+  </footer>
+
+</div>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
