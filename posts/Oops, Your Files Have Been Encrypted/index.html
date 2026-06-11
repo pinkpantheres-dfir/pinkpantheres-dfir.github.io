@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oops, Your Files Have Been Encrypted | DFIR Case Study</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+--bg:#0a0a0f;
+--surface:#111118;
+--surface2:#171722;
+--border:#2a2a3a;
+--pink:#ff2d78;
+--cyan:#00f5d4;
+--amber:#f5a623;
+--text:#e8e8f0;
+--muted:#8b8ba7;
+}
+
+*{box-sizing:border-box;}
+
+body{
+background:var(--bg);
+color:var(--text);
+font-family:'Syne',sans-serif;
+max-width:920px;
+margin:auto;
+padding:50px 32px 120px;
+}
+
+h1{
+font-size:3rem;
+line-height:1.1;
+margin-bottom:10px;
+}
+
+h2{
+margin-top:65px;
+border-left:4px solid var(--pink);
+padding-left:14px;
+font-size:1.6rem;
+}
+
+h3{
+font-family:'Space Mono',monospace;
+color:var(--cyan);
+font-size:.82rem;
+text-transform:uppercase;
+letter-spacing:.08em;
+}
+
+p,li{
+font-family:'Space Mono',monospace;
+font-size:.88rem;
+line-height:1.9;
+color:#d2d3e1;
+}
+
+pre{
+background:#0d0d17;
+border-left:4px solid var(--pink);
+padding:18px;
+overflow:auto;
+font-family:'Space Mono',monospace;
+font-size:.8rem;
+}
+
+.hero{
+margin-bottom:50px;
+}
+
+.eyebrow{
+font-family:'Space Mono',monospace;
+color:var(--cyan);
+font-size:11px;
+text-transform:uppercase;
+letter-spacing:.15em;
+}
+
+.deck{
+font-family:'Space Mono',monospace;
+color:var(--muted);
+font-size:.95rem;
+max-width:800px;
+}
+
+.tag{
+display:inline-block;
+border:1px solid var(--border);
+padding:4px 10px;
+margin:2px;
+font-family:'Space Mono',monospace;
+font-size:10px;
+}
+
+.callout{
+background:var(--surface);
+border-left:4px solid var(--cyan);
+padding:20px;
+margin:28px 0;
+}
+
+.timeline{
+border-left:1px solid var(--border);
+padding-left:24px;
+}
+
+.event{
+margin:22px 0;
+}
+
+.time{
+font-family:'Space Mono',monospace;
+color:var(--pink);
+font-size:12px;
+}
+
+.quote{
+font-size:1.3rem;
+font-weight:700;
+line-height:1.5;
+padding:30px 0;
+border-top:2px solid var(--pink);
+border-bottom:2px solid var(--pink);
+margin:40px 0;
+}
+
+.code-label{
+color:var(--cyan);
+font-family:'Space Mono';
+font-size:.75rem;
+text-transform:uppercase;
+margin-bottom:8px;
+}
+
+footer{
+margin-top:90px;
+padding-top:25px;
+border-top:1px solid var(--border);
+color:var(--muted);
+font-family:'Space Mono';
+font-size:.8rem;
+}
+</style>
+</head>
+
+<body>
+
+<div class="hero">
+
+<div class="eyebrow">
+Digital Forensics Challenge 2025 · Ransomware Analysis · Data Recovery
+</div>
+
+<h1>
+Oops, Your Files Have Been Encrypted
+</h1>
+
+<p class="deck">
+How a ransomware operator's implementation mistakes transformed an
+apparently unrecoverable encrypted archive into a fully recoverable dataset.
+This investigation followed the trail from intermittent encryption and ZIP
+recovery all the way to keystream reconstruction, full archive recovery,
+and a hidden secondary challenge concealed inside the encrypted data.
+</p>
+
+</div>
+
+<div>
+<span class="tag">#dfir</span>
+<span class="tag">#ransomware</span>
+<span class="tag">#cryptanalysis</span>
+<span class="tag">#forensics</span>
+<span class="tag">#datarecovery</span>
+<span class="tag">#incidentresponse</span>
+</div>
+
+<h2>Executive Summary</h2>
+
+<p>
+When I first opened the challenge, it looked like a fairly typical
+ransomware recovery scenario. There was an encrypted ZIP archive, a disk
+image containing encrypted files, and a hint pointing toward intermittent
+encryption.
+</p>
+
+<p>
+What made the challenge interesting wasn't the encryption algorithm itself.
+Instead, it was the series of operational mistakes made during the
+implementation of the ransomware.
+</p>
+
+<p>
+By exploiting those mistakes, I was able to reconstruct the encryption
+keystream, decrypt multiple protected files, recover a hidden challenge,
+and eventually restore the entire archive.
+</p>
+
+<div class="quote">
+The encryption wasn't broken.
+The implementation was.
+</div>
+
+<h2>Initial Observations</h2>
+
+<p>
+The first thing that caught my attention was the challenge tag:
+</p>
+
+<pre><code>#intermittent_encryption</code></pre>
+
+<p>
+That immediately changed how I approached the investigation.
+Instead of focusing on decryption, I started thinking about recovery.
+</p>
+
+<p>
+Intermittent encryption is fundamentally different from traditional
+ransomware encryption. Rather than encrypting an entire file, only selected
+portions are encrypted while large sections remain untouched.
+</p>
+
+<p>
+From a forensic perspective, that creates opportunity.
+</p>
+
+<p>
+If enough structural information survives, recovery may become possible
+even without possessing the original encryption key.
+</p>
+
+<h2>The First Crack in the Ransomware</h2>
+
+<p>
+The encrypted archive became my first target.
+</p>
+
+<p>
+Rather than attempting to decrypt it immediately, I wanted to understand
+how much of the original ZIP structure remained intact.
+</p>
+
+<div class="code-label">ZIP Structure Recovery</div>
+
+<pre><code>zip -FF PD12M_dataset.zip.enc --out repaired.zip</code></pre>
+
+<p>
+I wasn't expecting complete recovery.
+I only wanted to determine whether enough ZIP metadata survived to reveal
+what had originally existed inside the archive.
+</p>
+
+<p>
+The results were better than expected.
+</p>
+
+<p>
+Multiple JPEG files became accessible and, more importantly, one recovered
+file stood out from everything else.
+</p>
+
+<pre><code>085 - A Key Too Familiar(ko,en).docx</code></pre>
+
+<p>
+That filename felt less like user content and more like a clue left behind
+for investigators.
+</p>
+
+<h2>A Challenge Hidden Inside Another Challenge</h2>
+
+<p>
+Most recovered files were images.
+One wasn't.
+</p>
+
+<p>
+Buried among the JPEG files was the recovered document named:
+</p>
+
+<pre><code>085 - A Key Too Familiar(ko,en).docx</code></pre>
+
+<p>
+After opening it, I discovered that it contained an entirely separate
+forensic challenge.
+</p>
+
+<p>
+At that point, the investigation split into two tracks:
+recovering the original archive and solving the secondary challenge hidden
+inside the recovered data.
+</p>
+
+<h2>Following the Keystream</h2>
+
+<p>
+The document hinted that the ransomware relied on a stream cipher.
+</p>
+
+<p>
+That observation immediately suggested one important possibility:
+keystream reuse.
+</p>
+
+<p>
+If the same keystream had been used across multiple files, recovering that
+keystream once could allow recovery everywhere else.
+</p>
+
+<p>
+The breakthrough came from a file inside the disk image:
+</p>
+
+<pre><code>node-v22.16.0-x64.msi.enc</code></pre>
+
+<p>
+Unlike the other encrypted files, I could obtain a pristine copy of the
+original installer directly from NodeJS.
+</p>
+
+<p>
+That changed the entire problem.
+</p>
+
+<div class="callout">
+<p>
+Known plaintext is one of the most dangerous things a stream cipher can
+encounter. Once plaintext and ciphertext become available together,
+recovering the keystream becomes possible.
+</p>
+</div>
+
+<h2>The Moment Everything Changed</h2>
+
+<p>
+Stream ciphers rely on XOR operations.
+</p>
+
+<p>
+That means:
+</p>
+
+<pre><code>Ciphertext XOR Plaintext = Keystream</code></pre>
+
+<p>
+By XORing the encrypted NodeJS installer with the original installer,
+I recovered the exact keystream used by the ransomware.
+</p>
+
+<p>
+At that moment, the challenge stopped being about ransomware analysis.
+</p>
+
+<p>
+It became a keystream recovery problem.
+</p>
+
+<h2>Decrypting FILE_A Through FILE_H</h2>
+
+<p>
+Using the recovered keystream, I extracted and decrypted the encrypted
+files located on the Desktop.
+</p>
+
+<p>
+The recovered contents were merged together into a single output file,
+revealing additional clues about the attack.
+</p>
+
+<p>
+Near the end of the recovered text was a Base64-encoded string.
+</p>
+
+<pre><code>T29vcHMsIGZsYWch</code></pre>
+
+<p>
+After decoding:
+</p>
+
+<pre><code>Ooops, flag!</code></pre>
+
+<p>
+The secondary challenge had been solved.
+</p>
+
+<h2>The Ransomware's Fatal Mistakes</h2>
+
+<h3>Mistake #1 — Intermittent Encryption</h3>
+
+<p>
+The ransomware encrypted only portions of the ZIP archive.
+This preserved enough metadata and file structure to allow recovery tools
+to rebuild sections of the archive.
+</p>
+
+<h3>Mistake #2 — Keystream Reuse</h3>
+
+<p>
+The same stream cipher keystream was reused across multiple files.
+Once recovered from a known plaintext pair, it could be applied elsewhere.
+</p>
+
+<h3>Mistake #3 — Predictable Known Plaintext</h3>
+
+<p>
+Encrypting publicly available software introduced a perfect recovery
+scenario because clean copies could be downloaded and compared against the
+encrypted versions.
+</p>
+
+<h2>Finding the Pattern</h2>
+
+<p>
+While analyzing the recovered keystream, I noticed something unusual.
+</p>
+
+<p>
+The data wasn't random.
+</p>
+
+<p>
+The keystream appeared to repeat every 4096 bytes.
+</p>
+
+<p>
+Initially this looked insignificant, but the pattern became increasingly
+important when attempting to recover the remaining encrypted images.
+</p>
+
+<p>
+Further analysis revealed that encryption alignment depended heavily on
+the positioning of null-byte regions inside the repeating keystream.
+</p>
+
+<p>
+Once the relationship between the repeating blocks and null-byte regions
+became clear, reconstructing the remaining encrypted portions became
+significantly easier.
+</p>
+
+<h2>Brute-Forcing Alignment</h2>
+
+<p>
+The images between 020.jpg and 028.jpg represented the most difficult
+recovery segment.
+</p>
+
+<p>
+To identify where decryption should begin, I searched for known JPEG
+filename structures and ZIP metadata patterns.
+</p>
+
+<p>
+Instead of guessing, I brute-forced offsets until the recovered output
+began producing valid archive structures.
+</p>
+
+<p>
+When the expected magic bytes finally appeared, I knew the alignment was
+correct.
+</p>
+
+<div class="callout">
+<p>
+The investigation wasn't really about breaking encryption. It was about
+finding where the ransomware's assumptions no longer matched reality.
+</p>
+</div>
+
+<h2>Full Archive Recovery</h2>
+
+<p>
+With the correct alignment identified, I reconstructed the entire archive
+and repeatedly validated recovered ZIP structures.
+</p>
+
+<p>
+Several candidate archives were generated during testing, but only one
+produced a fully extractable archive with valid CRC checks across all
+files.
+</p>
+
+<p>
+The final recovery yielded:
+</p>
+
+<ul>
+<li>100 JPEG images</li>
+<li>The embedded DOCX challenge</li>
+<li>Valid ZIP structure</li>
+<li>Successful CRC verification</li>
+</ul>
+
+<p>
+The ransomware's recovery-resistant design had ultimately failed because
+of implementation flaws rather than cryptographic weaknesses.
+</p>
+
+<h2>Lessons Learned</h2>
+
+<ul>
+<li>Intermittent encryption creates recovery opportunities.</li>
+<li>Known plaintext remains a major threat to stream ciphers.</li>
+<li>Keystream reuse can completely undermine encryption.</li>
+<li>Archive metadata often survives longer than attackers expect.</li>
+<li>Recovery frequently depends more on implementation mistakes than cryptographic failures.</li>
+</ul>
+
+<h2>Final Thoughts</h2>
+
+<p>
+What I enjoyed most about this challenge was that recovery didn't come
+from defeating the encryption algorithm itself.
+</p>
+
+<p>
+Every breakthrough came from understanding how the ransomware operated,
+identifying where its assumptions failed, and leveraging those failures to
+recover information that should have been inaccessible.
+</p>
+
+<p>
+The ZIP archive revealed the first clues.
+The keystream revealed the rest.
+And by the end of the investigation, the challenge wasn't really about
+ransomware anymore.
+</p>
+
+<p>
+It was about how a handful of implementation mistakes can completely
+undermine an otherwise effective encryption scheme.
+</p>
+
+<footer>
+Digital Forensics Challenge 2025 · Independent DFIR Analysis
+</footer>
+
+</body>
+</html>

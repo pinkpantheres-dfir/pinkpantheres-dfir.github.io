@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DFC 2024 – 204: Find & Insert Resolution | DFIR Writeup</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;
+  --surface:#111118;
+  --surface2:#16161f;
+  --border:#2a2a3a;
+  --pink:#ff2d78;
+  --cyan:#00f5d4;
+  --amber:#f5a623;
+  --green:#39d353;
+  --text:#e8e8f0;
+  --muted:#8b8ba7;
+  --dim:#5a5a7a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Syne',sans-serif;
+  max-width:860px;
+  margin:auto;
+  padding:48px 32px 100px;
+  line-height:1.8;
+}
+
+/* ── Top bar ── */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:56px;
+  padding-bottom:20px;
+  border-bottom:1px solid var(--border);
+}
+.topbar-brand{
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--dim);
+}
+.topbar-sep{color:var(--border);font-size:18px;font-weight:300}
+.topbar-series{
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--pink);
+}
+
+/* ── Hero ── */
+.hero-eyebrow{
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  margin-bottom:20px;
+}
+h1{
+  font-size:2.75rem;
+  font-weight:800;
+  line-height:1.12;
+  margin-bottom:20px;
+  letter-spacing:-0.02em;
+}
+.hero-deck{
+  font-family:'Space Mono',monospace;
+  font-size:0.88rem;
+  color:var(--muted);
+  line-height:1.75;
+  max-width:680px;
+  margin-bottom:32px;
+}
+.meta-strip{
+  display:flex;
+  gap:0;
+  flex-wrap:wrap;
+  margin-bottom:32px;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:14px 0;
+}
+.meta-cell{
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  color:var(--dim);
+  padding-right:28px;
+  margin-right:28px;
+  border-right:1px solid var(--border);
+  line-height:1.6;
+}
+.meta-cell:last-child{border-right:none;margin-right:0;padding-right:0}
+.meta-cell strong{display:block;color:var(--muted);font-weight:700;margin-bottom:2px}
+
+/* ── Tags ── */
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:52px}
+.tag{
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  padding:3px 9px;
+  border:1px solid var(--border);
+  color:var(--dim);
+  letter-spacing:0.05em;
+}
+
+/* ── Section headings ── */
+h2{
+  font-size:1.45rem;
+  font-weight:800;
+  border-left:4px solid var(--pink);
+  padding-left:14px;
+  margin-top:60px;
+  margin-bottom:22px;
+  letter-spacing:-0.01em;
+}
+h3{
+  font-family:'Space Mono',monospace;
+  font-size:0.78rem;
+  font-weight:700;
+  color:var(--cyan);
+  text-transform:uppercase;
+  letter-spacing:0.14em;
+  margin-top:36px;
+  margin-bottom:14px;
+}
+
+/* ── Body text ── */
+p{
+  font-family:'Space Mono',monospace;
+  font-size:0.84rem;
+  color:#c4c4d8;
+  margin-bottom:18px;
+  line-height:1.9;
+}
+ul,ol{
+  font-family:'Space Mono',monospace;
+  font-size:0.84rem;
+  color:#c4c4d8;
+  padding-left:22px;
+  margin-bottom:18px;
+}
+li{margin-bottom:10px;line-height:1.75}
+
+/* ── Lead paragraph ── */
+.lead{
+  font-size:0.96rem;
+  color:#d8d8ec;
+  border-left:2px solid var(--border);
+  padding-left:18px;
+  margin-bottom:32px;
+  line-height:1.9;
+  font-family:'Space Mono',monospace;
+}
+
+/* ── Callouts ── */
+.callout{
+  background:var(--surface);
+  border-left:4px solid var(--cyan);
+  padding:18px 22px;
+  margin:32px 0;
+  border-radius:0 6px 6px 0;
+}
+.callout.warn{border-left-color:var(--amber)}
+.callout.note{border-left-color:var(--pink)}
+.callout.success{border-left-color:var(--green)}
+.callout-label{
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.14em;
+  color:var(--cyan);
+  margin-bottom:10px;
+}
+.callout.warn .callout-label{color:var(--amber)}
+.callout.note .callout-label{color:var(--pink)}
+.callout.success .callout-label{color:var(--green)}
+.callout p{margin:0;font-size:0.82rem;color:var(--muted)}
+
+/* ── Code ── */
+pre{
+  background:#0c0c16;
+  border-left:4px solid var(--pink);
+  padding:18px 20px;
+  overflow-x:auto;
+  margin:22px 0;
+  border-radius:0 4px 4px 0;
+}
+code{
+  font-family:'Space Mono',monospace;
+  font-size:0.77rem;
+  color:#dcdcff;
+  line-height:1.75;
+}
+p code,li code{
+  background:#1a1a28;
+  padding:2px 7px;
+  border-radius:3px;
+  font-size:0.79rem;
+  color:var(--cyan);
+}
+
+/* ── Hex display ── */
+.hex-block{
+  background:#080810;
+  border:1px solid var(--border);
+  border-left:4px solid var(--amber);
+  padding:18px 20px;
+  overflow-x:auto;
+  margin:22px 0;
+  border-radius:0 4px 4px 0;
+  font-family:'Space Mono',monospace;
+  font-size:0.78rem;
+  line-height:1.9;
+}
+.hex-offset{color:var(--dim)}
+.hex-byte{color:#7a9fff}
+.hex-byte.hl{color:var(--amber);font-weight:700}
+.hex-byte.hl-green{color:var(--green);font-weight:700}
+.hex-ascii{color:var(--muted);margin-left:12px}
+
+/* ── Bit-field table ── */
+.bit-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:24px 0;
+  font-family:'Space Mono',monospace;
+  font-size:0.75rem;
+}
+.bit-table th{
+  background:var(--surface);
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:0.1em;
+  font-size:9px;
+  padding:8px 12px;
+  border:1px solid var(--border);
+  text-align:left;
+}
+.bit-table td{
+  padding:8px 12px;
+  border:1px solid var(--border);
+  color:#c4c4d8;
+  vertical-align:top;
+}
+.bit-table tr:nth-child(even) td{background:#0e0e18}
+.bit-table td.field{color:var(--cyan)}
+.bit-table td.val{color:var(--amber);font-weight:700}
+.bit-table td.note{color:var(--muted);font-size:0.72rem}
+
+/* ── NAL header decode ── */
+.nal-row{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:2px;
+  margin:16px 0;
+}
+.nal-bit{
+  background:var(--surface);
+  border:1px solid var(--border);
+  text-align:center;
+  padding:8px 4px;
+  font-family:'Space Mono',monospace;
+  font-size:0.72rem;
+}
+.nal-bit .bval{font-size:1rem;font-weight:700;color:var(--text);display:block}
+.nal-bit .blabel{font-size:9px;color:var(--dim);display:block;margin-top:3px;letter-spacing:0.04em}
+.nal-bit.fz .bval{color:var(--green)}
+.nal-bit.idc .bval{color:var(--amber)}
+.nal-bit.nut .bval{color:var(--pink)}
+
+/* ── Resolution highlight ── */
+.res-calc{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:22px 26px;
+  margin:28px 0;
+}
+.res-calc-title{
+  font-family:'Space Mono',monospace;
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:0.14em;
+  color:var(--dim);
+  margin-bottom:14px;
+}
+.res-calc-step{
+  font-family:'Space Mono',monospace;
+  font-size:0.78rem;
+  color:var(--muted);
+  line-height:2;
+  margin-bottom:6px;
+}
+.res-calc-step span.op{color:var(--cyan)}
+.res-calc-step span.val{color:var(--amber);font-weight:700}
+.res-calc-step span.result{color:var(--green);font-weight:700}
+
+/* ── Answer box ── */
+.answer-box{
+  background:var(--surface2);
+  border:1px solid var(--pink);
+  padding:22px 26px;
+  margin:32px 0;
+  border-radius:4px;
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+}
+.answer-q{
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:0.14em;
+  color:var(--pink);
+  white-space:nowrap;
+  padding-top:3px;
+}
+.answer-v{
+  font-family:'Space Mono',monospace;
+  font-size:0.9rem;
+  font-weight:700;
+  color:var(--text);
+  line-height:1.5;
+}
+
+/* ── Pull quote ── */
+.pullquote{
+  font-family:'Syne',sans-serif;
+  font-size:1.15rem;
+  font-weight:700;
+  color:var(--text);
+  border-top:2px solid var(--pink);
+  border-bottom:1px solid var(--border);
+  padding:22px 0;
+  margin:40px 0;
+  line-height:1.5;
+}
+
+/* ── Tool grid ── */
+.tool-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  margin:24px 0;
+}
+.tool-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:14px 16px;
+  border-radius:4px;
+}
+.tool-name{
+  font-family:'Space Mono',monospace;
+  font-size:0.82rem;
+  font-weight:700;
+  color:var(--cyan);
+  margin-bottom:5px;
+}
+.tool-meta{
+  font-family:'Space Mono',monospace;
+  font-size:0.7rem;
+  color:var(--dim);
+  line-height:1.65;
+}
+
+/* ── SPS param list ── */
+.sps-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+  border:1px solid var(--border);
+  margin:24px 0;
+  border-radius:4px;
+  overflow:hidden;
+}
+.sps-row{
+  display:contents;
+}
+.sps-row > div{
+  font-family:'Space Mono',monospace;
+  font-size:0.74rem;
+  padding:7px 12px;
+  border-bottom:1px solid var(--border);
+  line-height:1.5;
+}
+.sps-row > div:first-child{
+  color:var(--muted);
+  background:var(--surface);
+  border-right:1px solid var(--border);
+}
+.sps-row > div:last-child{
+  color:var(--amber);
+  font-weight:700;
+}
+.sps-row.key > div:first-child{color:var(--pink)}
+.sps-row.key > div:last-child{color:var(--green);font-size:0.82rem}
+
+/* ── Divider ── */
+.divider{
+  border:none;
+  border-top:1px solid var(--border);
+  margin:52px 0;
+}
+
+/* ── Footer ── */
+.footer{
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  color:var(--dim);
+  margin-top:64px;
+  padding-top:20px;
+  border-top:1px solid var(--border);
+  line-height:1.8;
+}
+</style>
+</head>
+<body>
+
+<!-- Top navigation bar -->
+<div class="topbar">
+  <span class="topbar-brand">DFIR Research</span>
+  <span class="topbar-sep">/</span>
+  <span class="topbar-series">Digital Forensics Challenge 2024</span>
+</div>
+
+<!-- Hero -->
+<div class="hero-eyebrow">Case 204 · DVR Forensics · H.264 Bitstream Analysis</div>
+
+<h1>When the Header Holds the Truth</h1>
+
+<p class="hero-deck">
+  A DVR vendor hides decoding parameters inside a proprietary viewer rather than the file itself. A filesystem wipe means the viewer can't help. What's left is raw bitstream and if you know how to read it, the resolution is hiding in the first 15 bytes.
+</p>
+
+<div class="meta-strip">
+  <div class="meta-cell"><strong>Challenge</strong>DFC 2024 · Case 204</div>
+  <div class="meta-cell"><strong>Category</strong>Digital Forensics</div>
+  <div class="meta-cell"><strong>Points</strong>200 pts (Q1: 50 · Q2: 150)</div>
+  <div class="meta-cell"><strong>Evidence</strong>Problem_Frame_Data.264 · Extracted Header.hed</div>
+</div>
+
+<div class="tags">
+  <span class="tag">#forensics</span>
+  <span class="tag">#h264</span>
+  <span class="tag">#dvr</span>
+  <span class="tag">#bitstream</span>
+  <span class="tag">#sps</span>
+  <span class="tag">#nal-unit</span>
+  <span class="tag">#video-recovery</span>
+  <span class="tag">#dfc2024</span>
+</div>
+
+<!-- ── Executive Summary ── -->
+<h2>Executive Summary</h2>
+
+<p class="lead">
+  DVR manufacturers deliberately strip H.264 decoding parameters from stored footage and embed them inside proprietary viewer software instead  a form of DRM by obscurity. When filesystem-level directory entries are deleted or corrupted, the viewer can't locate the file and the footage appears unrecoverable. This challenge required extracting the resolution from a raw H.264 SPS NAL unit, then using a creative reference-profile technique to reconstruct and actually play back the video.
+</p>
+
+<p>
+  What made this one interesting was the two-layer problem. On the surface it looks like a video analysis task. But underneath, it's a trust-the-spec exercise  you have to go back to the ITU-T H.264 specification, understand how SPS NAL units encode width and height as Exp-Golomb coded fields, and work through the bit arithmetic manually to get a number the broken file refuses to tell you directly.
+</p>
+
+<p>
+  The answers were 1280×720 for the resolution, and "The Sun by Edvard Munch" for the recorded masterpiece  derived by using a reference video profile from a parallel challenge to unlock the broken footage in fix.video.
+</p>
+
+<!-- ── Tools ── -->
+<h2>Tools and Environment</h2>
+
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-name">010 Editor v15.0</div>
+    <div class="tool-meta">Publisher: SweetScape Software Inc<br>sweetscape.com<br><br>Hex editor with binary template support. Used to inspect the raw bytes of the .hed file and map the NAL unit structure.</div>
+  </div>
+  <div class="tool-card">
+    <div class="tool-name">Fix.Video</div>
+    <div class="tool-meta">Publisher: Digital Vision Limited<br>fix.video<br><br>Online broken video repair tool. Accepts a reference profile to reconstruct unplayable footage. Used to decode and preview the .264 frame data.</div>
+  </div>
+</div>
+
+<!-- ── Hash Verification ── -->
+<h2>Evidence Integrity</h2>
+
+<h3>Step 1  Verifying the Challenge Files</h3>
+
+<p>
+  Before touching anything analytically, I verified both files against their published MD5 hashes. In DVR forensics especially, this matters  these files have already been through one abnormal process (parameter stripping), and the last thing you want is to spend hours on a corrupted or mishandled copy.
+</p>
+
+<pre><code>$ md5sum "Extracted Header.hed"
+9a95ce76c6b02ad2d98866abbc248439  Extracted Header.hed
+
+$ md5sum Problem_Frame_Data.264
+821d3a9acca2a5b69352387fadf23fbf  Problem_Frame_Data.264</code></pre>
+
+<p>
+  Both matched the published values exactly. Evidence is clean. From this point, everything I'm looking at is trustworthy.
+</p>
+
+<!-- ── Q1 ── -->
+<h2>Q1: Extracting the Resolution from the H.264 Header</h2>
+
+<h3>Step 2  Opening the Header File in Hex</h3>
+
+<p>
+  I opened <code>Extracted Header.hed</code> in 010 Editor. The raw content is only 22 bytes  compact enough that I can work through it entirely by hand if needed. Here's what greeted me:
+</p>
+
+<div class="hex-block">
+  <span class="hex-offset">0000&nbsp;&nbsp;</span><span class="hex-byte hl">00 00 00 01</span> <span class="hex-byte hl">67</span> <span class="hex-byte">4D 00 29 8A A5 02 80 2D FC A8 00</span>&nbsp;&nbsp;<span class="hex-ascii">....gM.)Š¥.€-ü¨.</span><br>
+  <span class="hex-offset">0010&nbsp;&nbsp;</span><span class="hex-byte hl-green">00 00 01 68</span> <span class="hex-byte">EE 3C 80</span>&nbsp;&nbsp;<span class="hex-ascii">...hî&lt;€</span>
+</div>
+
+<p>
+  Two NAL units. The first starts at offset 0x00 with the 4-byte start code <code>00 00 00 01</code>, and the NAL header byte is <code>0x67</code>. The second starts at 0x10 with start code <code>00 00 01</code> and header byte <code>0x68</code>. I'll come back to what those mean in a moment  but the structure is already telling me something clean: this is a legitimate H.264 header fragment, properly formed.
+</p>
+
+<h3>Step 3  Decoding the NAL Unit Headers</h3>
+
+<p>
+  The 8-bit NAL unit header has three fields: a forbidden zero bit, a 2-bit <code>nal_ref_idc</code>, and a 5-bit <code>nal_unit_type</code>. Mapping <code>0x67</code> to binary:
+</p>
+
+<div class="nal-row">
+  <div class="nal-bit fz"><span class="bval">0</span><span class="blabel">forbidden zero</span></div>
+  <div class="nal-bit idc"><span class="bval">1</span><span class="blabel">nal_ref_idc</span></div>
+  <div class="nal-bit idc"><span class="bval">1</span><span class="blabel">nal_ref_idc</span></div>
+  <div class="nal-bit nut"><span class="bval">0</span><span class="blabel">nal_unit_type</span></div>
+  <div class="nal-bit nut"><span class="bval">0</span><span class="blabel">nal_unit_type</span></div>
+  <div class="nal-bit nut"><span class="bval">1</span><span class="blabel">nal_unit_type</span></div>
+  <div class="nal-bit nut"><span class="bval">1</span><span class="blabel">nal_unit_type</span></div>
+  <div class="nal-bit nut"><span class="bval">1</span><span class="blabel">nal_unit_type</span></div>
+</div>
+
+<p>
+  <code>0x67 = 01100111</code>. Forbidden zero: <code>0</code>. <code>nal_ref_idc</code>: <code>11</code> (3  referenced). <code>nal_unit_type</code>: <code>00111</code> = 7 = <strong>SPS</strong>. And <code>0x68</code> decodes the same way to <code>nal_unit_type</code> = 8 = <strong>PPS</strong>. So we have exactly what we need: a Sequence Parameter Set followed by a Picture Parameter Set. The resolution lives in the SPS.
+</p>
+
+<div class="callout">
+  <div class="callout-label">Why This Matters</div>
+  <p>DVR manufacturers strip these NAL units from the stored .264 data and embed them inside the viewer DLL. Without the SPS, a decoder has no way to know the frame dimensions, chroma format, or reference frame count  the video is unplayable. This .hed file is effectively the stolen key. My job is to read it.</p>
+</div>
+
+<h3>Step 4  Parsing the SPS RBSP</h3>
+
+<p>
+  The SPS payload begins at byte 5 (<code>0x4D</code>, after the NAL header byte <code>0x67</code>). The first two bytes of the SPS RBSP are always <code>profile_idc</code> and the constraint flags, followed by <code>level_idc</code>. Running the full RBSP decode across the payload:
+</p>
+
+<div class="sps-grid">
+  <div class="sps-row"><div>profile_idc</div><div>100 (High Profile)</div></div>
+  <div class="sps-row"><div>constraint flags</div><div>0x00 (all unset)</div></div>
+  <div class="sps-row"><div>level_idc</div><div>31 (Level 3.1)</div></div>
+  <div class="sps-row"><div>seq_parameter_set_id</div><div>0</div></div>
+  <div class="sps-row"><div>chroma_format_idc</div><div>1 (4:2:0)</div></div>
+  <div class="sps-row"><div>bit_depth_luma_minus8</div><div>0</div></div>
+  <div class="sps-row"><div>bit_depth_chroma_minus8</div><div>0</div></div>
+  <div class="sps-row"><div>log2_max_frame_num_minus4</div><div>3</div></div>
+  <div class="sps-row"><div>pic_order_cnt_type</div><div>0</div></div>
+  <div class="sps-row"><div>log2_max_pic_order_cnt_lsb_minus4</div><div>3</div></div>
+  <div class="sps-row"><div>num_ref_frames</div><div>1</div></div>
+  <div class="sps-row key"><div>pic_width_in_mbs_minus1</div><div>79 (0x4F)</div></div>
+  <div class="sps-row key"><div>pic_height_in_map_units_minus1</div><div>44 (0x2C)</div></div>
+  <div class="sps-row"><div>frame_mbs_only_flag</div><div>1</div></div>
+  <div class="sps-row"><div>direct_8x8_inference_flag</div><div>1</div></div>
+  <div class="sps-row"><div>frame_cropping_flag</div><div>0</div></div>
+  <div class="sps-row"><div>vui_parameters_present_flag</div><div>1</div></div>
+</div>
+
+<p>
+  The two values that matter are <code>pic_width_in_mbs_minus1</code> and <code>pic_height_in_map_units_minus1</code>. These are Exp-Golomb coded fields embedded in the bitstream. I'll walk through the arithmetic below.
+</p>
+
+<div class="callout warn">
+  <div class="callout-label">Note on Profile IDC</div>
+  <p>The challenge description notes that the DLL-based decoding parameters don't match a "predefined profile." In the SPS, profile_idc = 100 maps cleanly to High Profile  but some older DVR implementations use non-standard profile signalling. The resolution arithmetic is independent of this and can be derived from the width/height fields alone.</p>
+</div>
+
+<h3>Step 5  Deriving Width and Height</h3>
+
+<p>
+  H.264 encodes frame dimensions in units of macroblocks (16×16 pixel blocks), not raw pixels. The decode formula from the spec is:
+</p>
+
+<pre><code>Width  = (pic_width_in_mbs_minus1 + 1) × 16
+Height = (pic_height_in_map_units_minus1 + 1) × 16 × (frame_mbs_only_flag ? 1 : 2)</code></pre>
+
+<p>
+  Here's the step-by-step for both dimensions. The Exp-Golomb decode for width works through the byte <code>0x02 0x80</code>:
+</p>
+
+<div class="res-calc">
+  <div class="res-calc-title">Width Calculation</div>
+  <div class="res-calc-step"><span class="op">Bytes in bitstream</span>: <span class="val">0x02 0x80</span> → binary: <span class="val">00000010 10000000</span></div>
+  <div class="res-calc-step"><span class="op">Exp-Golomb leading zeros</span>: <span class="val">6</span> → code prefix gives offset <span class="val">(1 &lt;&lt; 6) − 1 = 63</span></div>
+  <div class="res-calc-step"><span class="op">Next 6 info bits</span>: <span class="val">010000</span> = 16 → value = <span class="val">63 + 16 = 79 (0x4F)</span></div>
+  <div class="res-calc-step"><span class="op">pic_width_in_mbs_minus1</span> = <span class="val">79</span></div>
+  <div class="res-calc-step"><span class="op">Width</span> = <span class="val">(79 + 1) × 16</span> = <span class="result">1280 px</span></div>
+</div>
+
+<div class="res-calc">
+  <div class="res-calc-title">Height Calculation</div>
+  <div class="res-calc-step"><span class="op">Byte in bitstream</span>: <span class="val">0x2D</span> → binary: <span class="val">00101101</span></div>
+  <div class="res-calc-step"><span class="op">Exp-Golomb leading zeros</span>: <span class="val">5</span> → code prefix gives offset <span class="val">(1 &lt;&lt; 5) − 1 = 31</span></div>
+  <div class="res-calc-step"><span class="op">Next 5 info bits</span>: <span class="val">01101</span> = 13 → value = <span class="val">31 + 13 = 44 (0x2C)</span></div>
+  <div class="res-calc-step"><span class="op">pic_height_in_map_units_minus1</span> = <span class="val">44</span></div>
+  <div class="res-calc-step"><span class="op">frame_mbs_only_flag</span> = <span class="val">1</span> (progressive, not interlaced)</div>
+  <div class="res-calc-step"><span class="op">Height</span> = <span class="val">(44 + 1) × 16 × 1</span> = <span class="result">720 px</span></div>
+</div>
+
+<p>
+  No crop offsets, so no adjustment needed. The full luma dimensions from the SPS are exactly what I calculated:
+</p>
+
+<div class="answer-box">
+  <span class="answer-q">Q1 Answer</span>
+  <span class="answer-v">Resolution: 1280 × 720<br><span style="color:var(--muted);font-size:0.8rem;font-weight:400;">Derived from SPS NAL unit in Extracted Header.hed<br>Note: the manual claims 1920×1080  the SPS disagrees.</span></span>
+</div>
+
+<div class="pullquote">
+  "The manual says 1920×1080. The bitstream says 1280×720. In forensics, the bytes win every time."
+</div>
+
+<!-- ── Q2 ── -->
+<h2>Q2: Decoding the Video and Identifying the Masterpiece</h2>
+
+<h3>Step 6  The Problem with Raw .264 Files</h3>
+
+<p>
+  Having confirmed the header, I turned to <code>Problem_Frame_Data.264</code>. The DVR's proprietary handling means the frame data is stored without embedded decoding parameters  those live in the DLL, not the file. So even with the SPS in hand, standard decoders like VLC or ffmpeg choke on it. There's no container, no SPS/PPS in the bitstream, and no profile reference. It's raw, undecoded frame data that needs an external parameter set to make sense of it.
+</p>
+
+<p>
+  The manual-documented resolution (1920×1080) also doesn't match the actual SPS  which means feeding the file to a decoder using the "expected" dimensions would produce garbage output even if it ran at all.
+</p>
+
+<h3>Step 7  Using fix.video as a Reconstruction Tool</h3>
+
+<p>
+  I found fix.video, which is built specifically for broken or incomplete video files. It can take a damaged file and repair it if it can infer a valid codec profile  or, more usefully, it accepts a separate reference video file whose codec parameters are used as the profile source for the broken footage.
+</p>
+
+<p>
+  Uploading <code>Problem_Frame_Data.264</code> alone produced no valid profiles  the tool correctly identified that the file lacked embedded parameters and couldn't self-repair.
+</p>
+
+<div class="callout note">
+  <div class="callout-label">The Insight That Unlocked This</div>
+  <p>I was simultaneously working through challenge 251  "Time is a Masterpiece"  which involved recovering an mp4 from a DVR binary file. Once I had that mp4 extracted, it occurred to me: both challenges involve DVR footage. If they're from the same DVR device, the codec profile in the 251 mp4 would be compatible with the 204 frame data. I uploaded the 251 mp4 as the reference profile in fix.video  and the preview appeared.</p>
+</div>
+
+<h3>Step 8  Preview and Identification</h3>
+
+<p>
+  With the 251 mp4 as the reference, fix.video successfully reconstructed and previewed <code>Problem_Frame_Data.264</code>. The repaired output was delivered as a QuickTime/MOV container at 1920×1080, h264 (Main), 25 FPS, 2.2 Mb/s  the full video information confirmed a clean repair.
+</p>
+
+<p>
+  The preview showed a CRT monitor displaying a colorful, radiant painting with dramatic light emanating from a central point. The image was unmistakable  a piece I'd encountered in art history contexts. The composition, the explosive solar motif, the style: this was Edvard Munch's "The Sun."
+</p>
+
+<div class="answer-box">
+  <span class="answer-q">Q2 Answer</span>
+  <span class="answer-v">The Sun  Edvard Munch<br><span style="color:var(--muted);font-size:0.8rem;font-weight:400;">Visible in the fix.video preview after reconstruction using a compatible DVR reference profile</span></span>
+</div>
+
+<hr class="divider">
+
+<!-- ── Analysis ── -->
+<h2>What This Challenge Is Actually About</h2>
+
+<p>
+  On the surface, 204 is a video forensics problem. But the deeper lesson is about what DVR manufacturers are doing when they "apply security" to footage: they're not encrypting it, they're just hiding the decoder key in proprietary software. The moment that software is unavailable  because it was deleted, or the filesystem was wiped, or the dedicated viewer just won't load a file without a directory entry  the footage appears inaccessible.
+</p>
+
+<p>
+  It isn't. The frame data is intact. The SPS is intact (in the .hed file). The only missing piece is the bridge between them, and that bridge is reconstructible from the spec and a compatible reference profile.
+</p>
+
+<div class="callout">
+  <div class="callout-label">Forensic Implication</div>
+  <p>If you're ever handed "unplayable" DVR footage without the proprietary viewer, don't assume the evidence is gone. Look for a .hed or similar extracted header file. Parse the SPS NAL unit directly. Then find any other footage from the same device model  in court records, parallel cases, or even manufacturer demo footage  and use it as the reference profile for reconstruction. The bitstream itself is almost always intact.</p>
+</div>
+
+<p>
+  The cross-challenge insight  that the 251 mp4 would serve as a compatible profile for 204  came from thinking about the problem at the device level rather than the file level. Both challenges involved the same DVR ecosystem. That was the key.
+</p>
+
+<!-- ── Takeaways ── -->
+<h2>Forensic Takeaways</h2>
+
+<ul>
+  <li><strong>DVR "security by obscurity" doesn't survive spec-level analysis.</strong> Stripping SPS/PPS from stored H.264 data and hiding them in a viewer DLL is not encryption. A forensic examiner who knows the NAL unit structure can extract resolution, profile, level, chroma format, and reference frame count directly from the embedded header file  no proprietary software needed.</li>
+
+  <li><strong>The Exp-Golomb coding of resolution is a well-documented ITU-T standard.</strong> <code>pic_width_in_mbs_minus1</code> and <code>pic_height_in_map_units_minus1</code> are in every SPS. If you can extract the SPS payload, you can derive the exact frame dimensions with pen-and-paper arithmetic.</li>
+
+  <li><strong>Cross-case awareness creates recovery opportunities.</strong> Treating parallel cases as isolated silos would have meant failing Q2. Recognising that two challenges shared a DVR ecosystem  and that the codec profile from one case could unlock the other  is the kind of lateral thinking that separates a comprehensive investigation from a narrow one.</li>
+
+  <li><strong>fix.video's reference profile feature is a legitimate forensic tool.</strong> It's designed for exactly this scenario: frame data without embedded parameters. The critical input is finding a geometrically and codec-compatible reference video. Once that's in place, reconstruction is automated.</li>
+
+  <li><strong>Manufacturer documentation should be treated as a claim, not a fact.</strong> The manual stated 1920×1080. The SPS said 1280×720. In a real case, using the documented resolution to decode footage without verifying against the actual SPS would produce distorted evidence. Always verify against the bitstream.</li>
+</ul>
+
+<hr class="divider">
+
+<h2>Conclusion</h2>
+
+<p>
+  The 204 challenge is a clean demonstration of why proprietary DVR "security" is forensically transparent to anyone willing to read the H.264 specification. The resolution  1280×720  was encoded in 15 bytes of SPS payload, accessible to any examiner with a hex editor and a basic understanding of Exp-Golomb variable length coding. The frame data was recoverable once I had a compatible reference profile from a parallel case.
+</p>
+
+<p>
+  The painting on the screen was "The Sun" by Edvard Munch  an apt image, as it turns out, for a challenge about looking past an obscuring layer and finding what's actually there.
+</p>
+
+<div class="callout note">
+  <div class="callout-label">Closing Note</div>
+  <p>DVR footage is involved in a significant proportion of real-world criminal cases  assault, theft, homicide. The pattern of "inaccessible" footage due to proprietary viewer requirements is far more common than it should be. If the bitstream exists, the footage is recoverable. The spec is public. The tools exist. Don't accept "unplayable" as a final answer.</p>
+</div>
+
+<div class="footer">
+  Digital Forensics Challenge 2024 · Case 204 · Find &amp; Insert Resolution · Writeup<br>
+  Problem_Frame_Data.264 MD5: 821d3a9acca2a5b69352387fadf23fbf · Extracted Header.hed MD5: 9a95ce76c6b02ad2d98866abbc248439
+</div>
+
+</body>
+</html>
