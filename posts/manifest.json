@@ -9,6 +9,15 @@
     "tags": ["#exFAT","#file-carving","#autopsy"]
   },
   {
+  "slug": "android-fbe-ext4-masterkey-recovery",
+  "title": "Android FBE EXT4 and Masterkey Recovery Fix",
+  "excerpt": "Fixing segmentation faults in sleuthkit to restore FBE key recovery from Android memory dumps.",
+  "type": "DFIR",
+  "date": " ",
+  "readTime": " ",
+  "tags": ["#android-forensics", "#fbe", "#ext4", "#memory-forensics"]
+},
+  {
     "slug": "edr-bitstream-analysis",
     "title": "EDR Bitstream Analysis",
     "excerpt": " ",
