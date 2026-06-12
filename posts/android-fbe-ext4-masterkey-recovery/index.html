@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android FBE EXT4 and Masterkey Recovery Fix</title>
+
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #0a0a0f;
+  color: #e8e8f0;
+  line-height: 1.8;
+  max-width: 900px;
+  margin: auto;
+  padding: 24px;
+}
+
+h1, h2, h3 {
+  color: #ff2d78;
+}
+
+code, pre {
+  background: #111118;
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  display: block;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.meta {
+  color: #7a7a9a;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Android FBE EXT4 and Masterkey Recovery Fix</h1>
+
+<p class="meta">DFIR · Android Forensics · Memory Analysis</p>
+
+<div class="section">
+<h2>Abstract</h2>
+<p>
+Android forensics has rapidly evolved in DFIR, especially with the introduction of File-Based Encryption (FBE). While FBE improves security, it significantly complicates forensic recovery. Existing tools for breaking FDE became ineffective once FBE became standard.
+</p>
+<p>
+A research team led by Dr. Tobias Gross developed a tool capable of recovering master keys from RAM during cold-boot attacks. However, a segmentation fault in the extended Sleuth Kit rendered the tool ineffective. This research identifies and fixes that issue, restoring the tool’s functionality.
+</p>
+</div>
+
+<div class="section">
+<h2>Introduction</h2>
+<p>
+Android is a Linux-based mobile operating system that has evolved significantly since its initial release in 2008. Early versions had limited security, but modern Android includes sandboxing, ASLR, and SELinux enforcement.
+</p>
+
+<p>
+Android introduced Full Disk Encryption (FDE) in Android 5.0 and later transitioned to File-Based Encryption (FBE), which allows per-file encryption rather than encrypting entire partitions.
+</p>
+</div>
+
+<div class="section">
+<h2>FBE vs FDE</h2>
+<ul>
+<li><b>FDE:</b> Encrypts entire partition with one master key</li>
+<li><b>FBE:</b> Encrypts individual files with separate keys</li>
+</ul>
+
+<p>
+FBE divides data into:
+</p>
+<ul>
+<li>Device Encrypted (pre-auth data)</li>
+<li>Credential Encrypted (post-auth data)</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Cold Boot Attack on Android</h2>
+<p>
+Cold boot attacks exploit DRAM remanence — memory retains data briefly after power loss. Attackers can:
+</p>
+
+<ul>
+<li>Cool RAM to preserve memory</li>
+<li>Reboot using forensic bootloaders</li>
+<li>Extract raw memory images</li>
+</ul>
+
+<p>
+These techniques allow recovery of encryption keys held in RAM.
+</p>
+</div>
+
+<div class="section">
+<h2>Key Recovery Method</h2>
+<p>
+Master keys are located using <b>aeskeyfind</b>, which detects AES key schedules in memory.
+</p>
+
+<p>
+Decryption relies on EXT4 extended attributes:
+</p>
+<ul>
+<li>Key Descriptor</li>
+<li>File Nonce</li>
+<li>Encryption Algorithm</li>
+</ul>
+
+<p>The Key Derivation Function (KDF):</p>
+
+<pre>
+DEK = AES-ECB(master_key, nonce)
+</pre>
+</div>
+
+<div class="section">
+<h2>Problem: Tool Failure</h2>
+
+<p>
+The extended Sleuth Kit tool failed with a segmentation fault when processing real device disk images.
+</p>
+
+<pre>
+fls → segmentation fault → tool breaks
+</pre>
+
+<p>
+This prevented:
+</p>
+<ul>
+<li>Filesystem traversal</li>
+<li>Key extraction</li>
+<li>Decryption</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Root Cause Analysis</h2>
+
+<p>
+Using <b>gdb</b>, the crash was traced to:
+</p>
+
+<pre>
+fs_name.c → tsk_fs_name_print()
+</pre>
+
+<p>
+The issue occurred here:
+</p>
+
+<pre>
+if (fs_file->meta->enc_attr_ptr != NULL)
+</pre>
+
+<p>
+Root cause:
+</p>
+
+<ul>
+<li><code>fs_file->meta == NULL</code></li>
+<li>Null pointer dereference → segmentation fault</li>
+</ul>
+
+<p>
+These NULL entries originated from unallocated EXT4 inodes.
+</p>
+</div>
+
+<div class="section">
+<h2>Fix Implemented</h2>
+
+<p>
+The issue was fixed by adding a null check:
+</p>
+
+<pre>
+if (fs_file->meta == NULL) {
+    tsk_print_sanitized(hFile, fs_file->name->name);
+    return;
+}
+</pre>
+
+<p>
+This prevents dereferencing invalid pointers.
+</p>
+</div>
+
+<div class="section">
+<h2>Additional Fix (fbekeyfind)</h2>
+
+<p>
+Another issue existed in the key extraction pipeline:
+</p>
+
+<ul>
+<li>Dependency on fls output</li>
+<li>Failure in inode filtering</li>
+</ul>
+
+<p>
+Regex filtering logic was improved, allowing successful key recovery.
+</p>
+</div>
+
+<div class="section">
+<h2>EXT4 Analysis Insight</h2>
+
+<p>
+Manual analysis identified:
+</p>
+
+<ul>
+<li>Invalid inodes (inode = 0)</li>
+<li>Broken directory entries</li>
+<li>Unallocated filesystem structures</li>
+</ul>
+
+<p>
+A custom EXT4 parser was built to:
+</p>
+
+<ul>
+<li>Parse superblocks</li>
+<li>Analyze inode tables</li>
+<li>Handle extended attributes</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Successful Decryption</h2>
+
+<p>
+After fixing:
+</p>
+
+<ul>
+<li>Master keys were recovered</li>
+<li>KDF derived DEK successfully</li>
+<li>Files decrypted correctly</li>
+</ul>
+
+<p>
+Example result:
+</p>
+
+<pre>
+Encrypted filename → Android
+</pre>
+</div>
+
+<div class="section">
+<h2>Final Outcome</h2>
+
+<ul>
+<li>Segmentation fault resolved ✅</li>
+<li>Key recovery restored ✅</li>
+<li>Tool fully functional ✅</li>
+</ul>
+
+<p>
+This restores the only open-source solution for FBE key recovery via cold boot attacks.
+</p>
+</div>
+
+<div class="section">
+<h2>Resources</h2>
+
+<ul>
+<li><b>Original Tool:</b>
+<a href="https://www.cs1.tf.fau.de/research/system-security-group/one-key-to-rule/" target="_blank">One Key to Rule Them All</a></li>
+
+<li><b>EXT4 Parser:</b>
+<a href="https://github.com/Azr43lKn1ght/ext4parser.git" target="_blank">EXT4 Parser GitHub</a></li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Full PDF</h2>
+
+<iframe src="report.pdf" width="100%" height="600px"></iframe>
+
+</div>
+
+</body>
+</html>
