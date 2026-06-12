@@ -1,92 +1,92 @@
 [
   {
-    "slug": "careless-drug-dealer",
-    "title": "Careless Drug Dealer",
+    "slug": "exfat-reconstruction",
+    "title": "Ex-fat Reconstruction",
     "excerpt": "",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#exFAT","#file-carving","#autopsy"]
   },
   {
     "slug": "edr-bitstream-analysis",
     "title": "EDR Bitstream Analysis",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#automotive-DFIR","#edr","#hex-analysis"]
   },
   {
     "slug": "h-264-bitstream-analysis-when-the-header-holds-the-truth",
     "title": "H.264 Bitstream Analysis When the Header Holds the Truth",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#h264", "#video-recovery"]
   },
   {
     "slug": "maze-of-traffic",
     "title": "Maze of Traffic",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["network-DFIR", "traffic-analysis"]
   },
   {
     "slug": "mem-oops-following-a-rootkit-through-memory",
-    "title": "Mem, Oops Following a Rootkit Through Memory",
-    "excerpt": null,
+    "title": "MemOops Following a Rootkit Through Memory",
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#memory-forensics", "#rootkit", "#windows"]
   },
   {
     "slug": "oops-your-files-have-been-encrypted",
     "title": "Oops, Your Files Have Been Encrypted",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#ransomware", "#incident-response"]
   },
   {
     "slug": "operation-red-penguin-from-rce-to-lateral-movement",
     "title": "Operation Red Penguin From RCE to Lateral Movement",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "threat-analysis",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": [ "#windows", "#adversary-techniques"]
   },
   {
     "slug": "reconnaissance-before-the-crime",
     "title": "Reconnaissance Before the Crime",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["threat-intel","#osint"]
   },
   {
     "slug": "tracing-a-container-based-crypto-mining-attack",
     "title": "Tracing a Container-Based Crypto Mining Attack",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#containers", "#crypto-mining", "#cloud-security", "#network-analysis"]
   },
   {
     "slug": "windows-lateral-movement",
     "title": "Windows Lateral Movement",
-    "excerpt": null,
+    "excerpt": " ",
     "type": "DFIR",
     "date": " ",
-    "readTime": null,
+    "readTime": " ",
     "tags": ["#windows", "#adversary-techniques"]
   }
 ]
