@@ -421,7 +421,7 @@
         }
 
         grid.innerHTML = posts.map(p => `
-          <a class="post-card" href="posts/${p.slug}/index.html">
+          <a class="post-card" href="posts/${encodeURIComponent(p.slug)}/index.html">
             <div class="post-meta">
               <span class="post-type type-${p.type}">${p.type}</span>
               <span class="post-date">${p.date}</span>
