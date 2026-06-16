@@ -6,7 +6,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#exFAT","#file-carving","#autopsy"]
+    "tags": ["exFAT","file-carving","autopsy"]
   },
   {
     "slug": "edr-bitstream-analysis",
@@ -15,7 +15,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#automotive-DFIR","#edr","#hex-analysis"]
+    "tags": ["automotive-DFIR","edr","hex-analysis"]
   },
   {
     "slug": "h-264-bitstream-analysis-when-the-header-holds-the-truth",
@@ -24,7 +24,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#h264", "#video-recovery"]
+    "tags": ["h264", "video-recovery"]
   },
   {
     "slug": "maze-of-traffic",
@@ -42,7 +42,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#memory-forensics", "#rootkit", "#windows"]
+    "tags": ["memory-forensics", "rootkit", "windows"]
   },
   {
     "slug": "oops-your-files-have-been-encrypted",
@@ -51,7 +51,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#ransomware", "#incident-response"]
+    "tags": ["ransomware", "incident-response"]
   },
   {
     "slug": "operation-red-penguin-from-rce-to-lateral-movement",
@@ -60,7 +60,7 @@
     "type": "threat-analysis",
     "date": " ",
     "readTime": " ",
-    "tags": [ "#windows", "#adversary-techniques"]
+    "tags": [ "windows", "adversary-techniques"]
   },
   {
     "slug": "reconnaissance-before-the-crime",
@@ -69,7 +69,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["threat-intel","#osint"]
+    "tags": ["threat-intel","osint"]
   },
   {
     "slug": "tracing-a-container-based-crypto-mining-attack",
@@ -78,7 +78,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#containers", "#crypto-mining", "#cloud-security", "#network-analysis"]
+    "tags": ["containers", "crypto-mining", "cloud-security", "network-analysis"]
   },
 
   {
@@ -88,7 +88,7 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#android-forensics", "#fbe", "#ext4", "#memory-forensics"]
+    "tags": ["android-forensics", "fbe", "ext4", "memory-forensics"]
   }, 
   {
     "slug": "windows-lateral-movement",
@@ -97,6 +97,6 @@
     "type": "DFIR",
     "date": " ",
     "readTime": " ",
-    "tags": ["#windows", "#adversary-techniques"]
+    "tags": ["windows", "adversary-techniques"]
   }
 ]
